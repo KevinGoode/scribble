@@ -30,18 +30,28 @@ function Tray (game, imagePath) {
     }
 }
 //A TrayState is a storage class for player current state. IE score, player name and letters in tray
-function TrayState(player, letters, score) {
+function TrayState(player) {
     // Storage class for a turnState.
-    // USed by tray display and also instantiated by game
+    // Used by tray display and also instantiated by game
     //at end of each turn to keep history
     this.player = player; //Player name/identifier
-    this.letters = letters; //Array of tiles
-    this.score = score; //Player score number
-    this.SetLetters = function(letters){
-        this.letters=letters;
+    this.letters = []; //Array of tiles
+    this.score = 0; //Player score number
+    this.AddLetter = function(letter){
+        this.letters.push(letter)
     }
-    this.GetLetters = function(){
-        return this.letters;
+    this.RemoveLetter = function(letter){
+        if (letter.positionType != 'tray'){
+            console.log("Can't remove letter " + letter.name +  " from tray because it has type: " + letter.positionType);
+        }
+        for (var i=0;i<this.letters.length;i++){
+            var lett = this.letters[i];
+            if ((lett.positionType == "tray") && (lett.position.x == letter.position.x) && (lett.position.y == letter.position.y)){
+                this.letters.splice(i,1);
+                return;
+            }
+        }
+        console.log("Failed to remove letter " + letter.name +  " of type "+ letter.positionType);
     }
     this.GetPlayer = function(){
         return this.player;

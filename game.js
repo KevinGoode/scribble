@@ -9,14 +9,22 @@ function QuestionResponse(yes, message) {
     this.Message = message
 }
 var OK_RESPONSE = new QuestionResponse(true,"");
-function Game(){
+
+function Game(updateGameStateInfoHandler){
+    this.updateGameStateInfoHandler = updateGameStateInfoHandler
     this.gameStarted = false;
-    this.gameCreated = false ;//Can be also used to indicate whether jopined game
+    this.gameCreated = false ;//Can be also used to indicate whether joined game
     this.gameName = "";
     this.playerName = "";
     this.state = null;
+
     this.HasGameStarted = function() {
         return this.gameStarted
+    }
+    this.CanIGo = function(){
+        //Simple but useful function. Returns true if it is local players turn to go
+        return (this.HasGameStarted() && this.state.GetCurrentPlayer() == this.playerName)
+            
     }
     this.CanIStartGame =function(){
         if (! this.gameCreated){
@@ -25,20 +33,23 @@ function Game(){
         } else if (! this.amIGameOwner()){
             var msg = "Only the player who created the game can start it."
             return new QuestionResponse(false, msg)
+        } else if (this.gameStarted){
+            var msg = "Cannot start game. Game has already been started"
+            return new QuestionResponse(false, msg)
         }
         return OK_RESPONSE
     }
-    this.CanICreateNewGame = function(){
+    this.CanICreateNewGame = function(gameName, playerName){
         if (this.gameCreated){
-            var msg = "Cannot create game. Game has already been created.";
+            var msg = "Cannot create a new game. A game has already been created.";
             return new QuestionResponse(false, msg);
-        } else if (! this.HasGameStarted()){
-            var msg = "Cannot create game. Game has already been started."
+        } else if (this.HasGameStarted()){
+            var msg = "Cannot create a new game game. A game has already been created. Press 'EndGame' if you really want to end this game."
             return new QuestionResponse(false, msg)
-        }else if ( this.gameName == ""){
+        }else if ( gameName == ""){
             var msg = "Cannot create game. Game name has not been set."
             return new QuestionResponse(false, msg)
-        }else if ( this.playerName == ""){
+        }else if ( playerName == ""){
             var msg = "Cannot create game. Player name has not been set."
             return new QuestionResponse(false, msg)
         }
@@ -54,11 +65,11 @@ function Game(){
         }
         return OK_RESPONSE
     }
-    this.CanIJoinGame = function(){
-        if ( this.gameName == ""){
+    this.CanIJoinGame = function(gameName, playerName){
+        if ( gameName == ""){
             var msg = "Cannot join game. Game name has not been set."
             return new QuestionResponse(false, msg)
-        }else if ( this.playerName == ""){
+        }else if (playerName == ""){
             var msg = "Cannot join game. Player name has not been set."
             return new QuestionResponse(false, msg)
         }else if (this.gameCreated){
@@ -69,27 +80,39 @@ function Game(){
         return OK_RESPONSE
     }
     this.CanIChangeLetters = function(){
-        //TODO
+        if (!this.HasGameStarted()) {
+            var msg = "Cannot change letters. Game has not started yet."
+            return new QuestionResponse(false, msg);
+        } else if (!this.CanIGo()){
+            var msg = "Cannot change letters. It is not your turn."
+            return new QuestionResponse(false, msg);
+        }
         return OK_RESPONSE
     }
     this.CanIEndTurn = function(){
-        //TODO
+        if (!this.HasGameStarted()) {
+            var msg = "Cannot end turn. Game has not started yet."
+            return new QuestionResponse(false, msg);
+        }else if (!this.CanIGo()){
+            var msg = "Cannot end turn. It is not your turn."
+            return new QuestionResponse(false, msg);
+        }
         return OK_RESPONSE
     }
     this.CanIUndo = function(){
-        if (! this.amIGameOwner()){
-            var msg = "Only the game manager is allowed to undo. Ask " + this.state.GameOwner + " to undo if you think last word is illegal."
-            return new QuestionResponse(false, msg)
-        } else if (!this.HasGameStarted()) {
+        if (!this.HasGameStarted()) {
             var msg = "Cannot undo. Game has not started yet."
-            return new QuestionResponse(false, msg)
-        }else if (state.History.length < 2) {
+            return new QuestionResponse(false, msg);
+        }else if (! this.amIGameOwner()){
+            var msg = "Only the game manager is allowed to undo. Ask " + this.state.GameOwner + " to undo."
+            return new QuestionResponse(false, msg);
+        }else if (this.state.History.length < 2) {
             var msg = "Cannot undo. There is nothing to undo. Nobody has had a turn yet."
-            return new QuestionResponse(false, msg)
+            return new QuestionResponse(false, msg);
         }
         else if (!state.History[state.History.length-1].DidAddWord()) {
             var msg = "Cannot undo. Last turn did not not involve adding a word"
-            return new QuestionResponse(false, msg)
+            return new QuestionResponse(false, msg);
         }
         return OK_RESPONSE
     }
@@ -97,43 +120,118 @@ function Game(){
         var response = this.CanIChangeLetters();
         if (response.Yes){
             //TODO update state , send message to server to update all other players
+            alert("ChangeLetters - todo");
         }
     }
     this.EndTurn = function (){
         var response = this.CanIEndTurn();
         if (response.Yes){
             //TODO update state , send message to server to update all other players
+            alert("EndTurn - todo");
         }
     }
     this.EndGame = function (){
         var response = this.CanIEndGame();
         if (response.Yes){
             //TODO update state , send message to server to reinit all  players to reset
+            alert("EndGame - todo");
+            this.gameCreated = false;
+            this.gameStarted = false;
+            this.gameName = "";
+            this.playerName = "";
+            this.state =null;
+            this.updateGameDisplay(null);
         }
     }
-    this.CreateGame = function(){
-        var response = this.CanICreateNewGame();
+    this.CreateGame = function(gameName, playerName){
+        var response = this.CanICreateNewGame(gameName, playerName);
         if (response.Yes){
-            //TODO send request to server
+            this.gameName = gameName;
+            this.playerName=playerName;
             this.gameCreated = true;
-            this.state.GameOwner = this.playerName;
+            this.state = new GameState()
+            this.state.GameOwner = 0;
+            this.onPlayerJoined(this.playerName);
+            //TODO send request to server
+            alert("CreateGame - more todo");
         }
     }
     this.StartGame = function() {
         var response = this.CanIStartGame();
         if (response.Yes){
-            this.state = GameState()
+            
+            alert("StartGame - todo");
             //TODO add letters to trays for each player, determine who starts then send instructions to all
-            return this.gameStarted = true
+            this.gameStarted = true;
+            var initialTurnState = this.getInitialTurnState();
+            this.state.AddTurnState(initialTurnState);
+            //The first tray in first turn is first player
+            this.state.SetCurrentPlayer(initialTurnState.GetTrayState(0).GetPlayer());
+            this.updateGameDisplay(initialTurnState);
+        }
+    }
+    this.Undo = function() {
+        var response = this.CanIUndo();
+        if (response.Yes){
+            alert("Undo - todo");
+        }
+    }
+    this.JoinGame = function(gameName, playerName) {
+        var response = this.CanIJoinGame(gameName, playerName);
+        if (response.Yes){
+            this.gameName = gameName;
+            this.playerName=playerName;
+            alert("JoinGame - todo");
         }
     }
     this.amIGameOwner = function() {
-        return (this.playerName != "" && this.state && this.state.GameOwner == this.playerName );
+        return (this.playerName != "" && this.state && this.state.GetGameOwner() == this.playerName );
     }
     //updateFromLastTurn called at end of each turn (non-active players only)
     //This function changes all state
     this.updateFromLastTurn = function(state, turn){
         this.state = state;
+    }
+
+    this.onPlayerJoined = function(name){
+        //Handler when player joins.
+        //Also called by pplayer who creates game
+        this.state.Players.push(name);
+        this.updateGameDisplay(null)
+    }
+    this.getStateText =function (){
+       if (this.gameStarted) return "Started";
+       if (this.gameCreated) return "Created";
+       return "";
+    }
+    this.getInitialTurnState = function(){
+        var bag = new Bag();
+        var boardState = new BoardState();
+        var trays = bag.GetInitialTrays(this.state.Players);
+        var turnState = new TurnState(bag, boardState, trays, "", null);
+        return turnState;
+    }
+    this.updateGameDisplay = function(turnState){
+        var text = "";
+        if (this.state) {
+            text += "State:" + this.getStateText() + "\n";
+            text += "Letters Left: " + this.state.GetBagSize().toString() + "\n";
+            text += "Players:\n";
+            for (var i=0;i<this.state.Players.length;i++){
+                var score = 0;
+                if (turnState) score = turnState.GetPlayerScore(this.state.Players[i]);
+                var extra = "";
+                if (this.playerName == this.state.Players[i] ){
+                    extra += "(Me)"
+                }
+                if (this.state.GetGameOwner() == this.state.Players[i]){
+                    extra +="(Manager)"
+                }
+                text += score.toString() + " " + this.state.Players[i] + extra + "\n";
+            }
+
+        }
+        this.updateGameStateInfoHandler(text);
     }
 }
 //The GameState is calculated by the active player and shared with all other players at the end of each turn.
@@ -155,5 +253,35 @@ function GameState () {
     // History is array of TurnStates keeping a detailed history of each turn.
     // Note first TurnState is only interesting in terms of initial bag state and each
     //player's tray state
-    this.History = []; 
+    this.History = [];
+    this.AddTurnState = function(turnState){
+        this.History.push(turnState);
+    }
+    this.GetBagSize = function(){
+        var count = 0;
+        if (this.History.length >=1 )
+        {
+           count = this.History[this.History.length-1].GetBagSize();
+        }
+        return count;
+    }
+    this.GetGameOwner = function(){
+        return this.Players[ this.GameOwner];
+    }
+    this.SetCurrentPlayer = function(playerName){
+        this.CurrentPlayer = 0
+        for (var i=0;i<this.Players.length;i++){
+            if (this.Players[i] == playerName){
+                this.CurrentPlayer =  i;
+                break;
+            }
+        }
+    }
+    this.GetCurrentPlayer = function(){
+        var player = "";
+        if  (this.CurrentPlayer <= (this.Players.length -1) ){
+            player = this.Players[this.CurrentPlayer];
+        }
+        return player
+    }
 }

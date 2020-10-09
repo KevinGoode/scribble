@@ -16,7 +16,7 @@ function InfoPanel (game,  x, y, width, height, font, textColour, defaultText) {
     this.SetText = function(text){
         this.message.text = this.defaultText + text;
         while(this.message.height > height){
-            text = removeWordsFromStart(text, 5)
+            text = removeWordsFromStart(text, 2)
             this.message.text = this.defaultText + text;
         }
         //Return input text that may have been shortened

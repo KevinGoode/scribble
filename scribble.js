@@ -27,7 +27,7 @@ var messagePanel;
 var scorePanel;
 var dropPanel;
 var errorPanel;
-var Game;
+var GameEngine;
 
 
 function preload() {
@@ -93,10 +93,10 @@ function positionStaticImages(){
     Tray.init(0, boardHeight +10)
     
     //Panels
-    scorePanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset, standardPanelWidth, standardPanelHeight,  "12px Arial;", '#50c878', "Game:\n"); //Emerald
-    dropPanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + standardPanelHeight +10, standardPanelWidth, standardPanelHeight,  "12px Arial;", '#c9c9c9', "Drop:\n"); //grey
+    scorePanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset, standardPanelWidth, standardPanelHeight*3/2,  "12px Arial;", '#50c878', "Score:\n"); //Emerald
+    dropPanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + standardPanelHeight*3/2 +10, standardPanelWidth, standardPanelHeight/2,  "12px Arial;", '#c9c9c9', "Drop:\n"); //grey
     errorPanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + 2*(standardPanelHeight +10), standardPanelWidth, standardPanelHeight,  "12px Arial;", '#ff0000', "System:\n"); //red
-    messagePanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + 3*(standardPanelHeight +10), standardPanelWidth*2, 185,  "12px Arial;", '#00a5ff', "Chat:\n"); //blue
+    messagePanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + 3*(standardPanelHeight +10), standardPanelWidth*2, standardPanelHeight*3/2,  "12px Arial;", '#00a5ff', "Chat:\n"); //blue
 
     messageParams = {
         font: '18px Arial',
@@ -133,10 +133,11 @@ function positionStaticImages(){
     gameBox = game.add.inputField(feedbackLeftAlign, 0, gameParams);
     nameBox = game.add.inputField(feedbackLeftAlign, 40, nameParams);
 }
+
 function create() {
     initGameArea();
     positionStaticImages();
-    Game = Game()
+    GameEngine = new Game(setScore);
     var group = game.add.group();
 
     group.inputEnableChildren = true;
@@ -201,25 +202,46 @@ function render() {
 
 }
 function onNewGame(button){
-    alert("onNewGame");
-    gameBox.inputEnabled=false;
-    nameBox.inputEnabled=false;
-    messageBox.inputEnabled=true;
+    var response = GameEngine.CanICreateNewGame(gameBox.text.text,nameBox.text.text);
+    if (response.Yes) {
+        GameEngine.CreateGame(gameBox.text.text,nameBox.text.text);
+        gameBox.inputEnabled=false;
+        nameBox.inputEnabled=false;
+        messageBox.inputEnabled=true;
+    }else{
+        errorPanel.SetText(response.Message);
+    }
 }
 function onJoinGame(button){
-    alert("onJoinGame")
-    gameBox.inputEnabled=false;
-    nameBox.inputEnabled=false;
-    messageBox.inputEnabled=true;
+    var response = GameEngine.CanIJoinGame(gameBox.text.text,nameBox.text.text);
+    if (response.Yes) {
+        GameEngine.JoinGame(gameBox.text.text,nameBox.text.text);
+        gameBox.inputEnabled=false;
+        nameBox.inputEnabled=false;
+        messageBox.inputEnabled=true;
+    }else{
+        errorPanel.SetText(response.Message);
+    }
 }
 function onStartGame(button){
-    alert("onStartGame")
+    var response = GameEngine.CanIStartGame();
+    if (response.Yes) {
+        GameEngine.StartGame();
+    }else{
+        errorPanel.SetText(response.Message);
+    }
 }
 function onEndGame(button){
-    gameBox.inputEnabled=true;
-    nameBox.inputEnabled=true;
-    messageBox.inputEnabled=false;
-    gameBox.setText("");
+    var response = GameEngine.CanIEndGame();
+    if (response.Yes) {
+        GameEngine.EndGame();
+        gameBox.inputEnabled=true;
+        nameBox.inputEnabled=true;
+        messageBox.inputEnabled=false;
+        gameBox.setText("");
+    }else{
+        errorPanel.SetText(response.Message);
+    }
     
 }
 function onSendmessage(button){
@@ -227,11 +249,29 @@ function onSendmessage(button){
     messageBox.setText("");
 }
 function onEndTurn(button){
-    
+    var response = GameEngine.CanIEndTurn();
+    if (response.Yes) {
+        GameEngine.EndTurn();
+    }else{
+        errorPanel.SetText(response.Message);
+    }
 }
 function onUndo(button){
-    errorPanel.SetText("Undo is currently not supported\n");
+    var response = GameEngine.CanIUndo();
+    if (response.Yes) {
+        GameEngine.Undo();
+    }else{
+        errorPanel.SetText(response.Message);
+    }
 }
 function onChangeLetters(button){
-    alert("onChangeLetters")
+    var response = GameEngine.CanIChangeLetters();
+    if (response.Yes) {
+        GameEngine.ChangeLetters();
+    }else{
+        errorPanel.SetText(response.Message);
+    }
+}
+function setScore(text){
+    scorePanel.SetText(text);
 }

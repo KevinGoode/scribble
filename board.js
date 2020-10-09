@@ -78,15 +78,25 @@ function GameBoard(game, name) {
     }
 }
 //A BoardState copy of board state at end of a turn
-function BoardState(player, letters, score) {
+function BoardState() {
     // Storage class for a BoardState.
     // Used by Board but also instantiated by game
     //at end of each turn to keep history
-    this.letters = letters; //Array of tiles
-    this.SetLetters = function(letters){
-        this.letters=letters;
+    this.letters = []; //Array of tiles
+    this.AddLetter = function(letter){
+        this.letters.push(letter)
     }
-    this.GetLetters = function(){
-        return this.letters;
+    this.RemoveLetter = function(letter){
+        if (letter.positionType != 'board'){
+            console.log("Can't remove letter " + letter.name +  " from board because it has type: " + letter.positionType);
+        }
+        for (var i=0;i<this.letters.length;i++){
+            var lett = this.letters[i];
+            if ((lett.positionType == "board") && (lett.position.x == letter.position.x) && (lett.position.y == letter.position.y)){
+                this.letters.splice(i,1);
+                return;
+            }
+        }
+        console.log("Failed to remove letter " + letter.name +  " of type "+ letter.positionType);
     }
 }
