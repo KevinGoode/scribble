@@ -28,16 +28,11 @@
     ];
 
 function GameBoard(game, name) {
-
-
-
-
-    // https://phaser.io/examples/v2/buttons/action-on-click
-    // https://phaser.io/docs/2.6.2/Phaser.Button.html
-    //Width and height are sizer of individual button images
-    //This component assumes there are 3 images with image 0: normal, 1: lighter, 2: flatter
+    //Static display properties
     this.name = name;
     this.game = game;
+    //Dynamic game properties
+    this.letters = []
     
     //Fullboard
     game.load.image('board', 'assets/board.jpg');
@@ -48,6 +43,16 @@ function GameBoard(game, name) {
     game.load.image('DoubleLetter', 'assets/DoubleLetter.jpg');
     game.load.image('TripleWord', 'assets/TripleWord.jpg');
     game.load.image('TripleLetter', 'assets/TripleLetter.jpg');
+    //Dynamic state
+    this.state = {} //GameState
+
+    this.SetState = function(state){
+        this.state=state;
+    }
+    this.SetState = function(){
+        return this.state;
+    }
+    
 
     this.initBoard = function(origx,origy,board2DArray){
         var x = origx;
@@ -63,11 +68,25 @@ function GameBoard(game, name) {
     }
 
     this.init = function(){
+        //Initialise display of board
         if (this.name == "standard"){
             this.initBoard(0,0,STANDARD_BOARD)
         }else if (this.name == "default"){
          this.game.add.sprite(0, 0, 'board');
         }
 
+    }
+}
+//A BoardState copy of board state at end of a turn
+function BoardState(player, letters, score) {
+    // Storage class for a BoardState.
+    // Used by Board but also instantiated by game
+    //at end of each turn to keep history
+    this.letters = letters; //Array of tiles
+    this.SetLetters = function(letters){
+        this.letters=letters;
+    }
+    this.GetLetters = function(){
+        return this.letters;
     }
 }
