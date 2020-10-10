@@ -3,7 +3,9 @@ function Bag () {
         var unmixedBag = [];
         ALPHABET.forEach(letter => {
             for (var i=0;i<letter.total;i++){
-              unmixedBag.push(letter);
+              //Take a copy of letter
+              let letterCopy = Object.assign({}, letter);
+              unmixedBag.push(letterCopy);
             }
         });
         return this.shuffle(unmixedBag);
@@ -69,8 +71,8 @@ function Bag () {
     this.getTrayLetter = function(x){
         var letter = this.letters.pop();
         letter.positionType="tray";
-        letter.position.y =0;
-        letter.position.x =x;
+        letter.y =0;
+        letter.x =x;
         return letter;
     }
     this.letters =  this.getInitialBag()

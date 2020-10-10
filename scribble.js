@@ -19,7 +19,7 @@ var messageBox;
 var gameBox;
 var nameBox;
 var Board;
-var result = 'Drag a sprite';
+var TopDisplay = '';
 var Tray;
 var Tiles;
 var Bag;
@@ -61,6 +61,7 @@ function loadImages(){
   
 }
 function positionStaticImages(){
+    
     var buttonHeight=67;
     var boardWidth =660; //640
     var boardHeight =660; //640
@@ -137,27 +138,8 @@ function positionStaticImages(){
 function create() {
     initGameArea();
     positionStaticImages();
-    GameEngine = new Game(setScore);
-    var group = game.add.group();
+    GameEngine = new Game(updateGameDisplay);
 
-    group.inputEnableChildren = true;
-
-    var atari = group.create(32, 100, 'atari');
-
-    //  Enable input and allow for dragging
-    atari.inputEnabled = true;
-    atari.input.enableDrag();
-    atari.events.onDragStart.add(onDragStart, this);
-    atari.events.onDragStop.add(onDragStop, this);
-
-    var sonic = group.create(300, 200, 'sonic');
-
-    sonic.inputEnabled = true;
-    sonic.input.enableDrag();
-    sonic.events.onDragStart.add(onDragStart, this);
-    sonic.events.onDragStop.add(onDragStop, this);
-
-    group.onChildInputDown.add(onDown, this);
 
 }
 
@@ -168,37 +150,10 @@ function initGameArea(){
 }
 
 
-function onDown(sprite, pointer) {
-
-    result = "Down " + sprite.key;
-
-    console.log('down', sprite.key);
-
-}
-
-function onDragStart(sprite, pointer) {
-
-    result = "Dragging " + sprite.key;
-
-}
-
-function onDragStop(sprite, pointer) {
-
-    result = sprite.key + " dropped at x:" + pointer.x + " y: " + pointer.y;
-
-    if (pointer.y > 400)
-    {
-        console.log('input disabled on', sprite.key);
-        sprite.input.enabled = false;
-
-        sprite.sendToBack();
-    }
-
-}
 
 function render() {
 
-    game.debug.text(result, 10, 20);
+    game.debug.text(TopDisplay, 10, 20);
 
 }
 function onNewGame(button){
@@ -272,6 +227,26 @@ function onChangeLetters(button){
         errorPanel.SetText(response.Message);
     }
 }
-function setScore(text){
-    scorePanel.SetText(text);
+function updateGameDisplay(infoText, state){
+    //Main handler for receiving state updates
+    var me = GameEngine.GetMyPlayerName();
+    
+    TopDisplay = me;
+    //Update score text
+    scorePanel.SetText(infoText);
+
+    //Now update board view
+    var lastTurn = state.GetLastTurn()
+    if (lastTurn){
+        //There was a last turn
+    }else{
+        //No last turn, so show my initial tray if game has started
+        //Otherwise do nothing
+
+        var myTray = state.GetMyTrayState(me)
+        if (myTray){
+            Tray.AddLetters(myTray.GetLetters());
+        }
+    }
 }
+ 

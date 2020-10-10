@@ -40,6 +40,9 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
     this.GetBagSize = function(){
         return this.Bag.GetNumberOfLetters();
     }
+    this.GetTrayStates = function(){
+        return this.TrayStates;
+    }
     this.GetTrayState = function(index){
         var trayState = null;
         if (index <  this.TrayStates.length){

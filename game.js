@@ -10,14 +10,17 @@ function QuestionResponse(yes, message) {
 }
 var OK_RESPONSE = new QuestionResponse(true,"");
 
-function Game(updateGameStateInfoHandler){
-    this.updateGameStateInfoHandler = updateGameStateInfoHandler
+function Game(updateGameStateHandler){
+    this.updateGameStateHandler = updateGameStateHandler
     this.gameStarted = false;
     this.gameCreated = false ;//Can be also used to indicate whether joined game
     this.gameName = "";
     this.playerName = "";
     this.state = null;
-
+    
+    this.GetMyPlayerName = function (){
+        return this.playerName;
+    }
     this.HasGameStarted = function() {
         return this.gameStarted
     }
@@ -140,7 +143,7 @@ function Game(updateGameStateInfoHandler){
             this.gameName = "";
             this.playerName = "";
             this.state =null;
-            this.updateGameDisplay(null);
+            this.sendUpdateGameMessage();
         }
     }
     this.CreateGame = function(gameName, playerName){
@@ -167,7 +170,7 @@ function Game(updateGameStateInfoHandler){
             this.state.AddTurnState(initialTurnState);
             //The first tray in first turn is first player
             this.state.SetCurrentPlayer(initialTurnState.GetTrayState(0).GetPlayer());
-            this.updateGameDisplay(initialTurnState);
+            this.sendUpdateGameMessage();
         }
     }
     this.Undo = function() {
@@ -197,7 +200,7 @@ function Game(updateGameStateInfoHandler){
         //Handler when player joins.
         //Also called by pplayer who creates game
         this.state.Players.push(name);
-        this.updateGameDisplay(null)
+        this.sendUpdateGameMessage()
     }
     this.getStateText =function (){
        if (this.gameStarted) return "Started";
@@ -211,7 +214,9 @@ function Game(updateGameStateInfoHandler){
         var turnState = new TurnState(bag, boardState, trays, "", null);
         return turnState;
     }
-    this.updateGameDisplay = function(turnState){
+    this.receiveUpdateGameMessage = function(state){
+        //This is callback that receives a game update
+        this.state = state;
         var text = "";
         if (this.state) {
             text += "State:" + this.getStateText() + "\n";
@@ -219,7 +224,7 @@ function Game(updateGameStateInfoHandler){
             text += "Players:\n";
             for (var i=0;i<this.state.Players.length;i++){
                 var score = 0;
-                if (turnState) score = turnState.GetPlayerScore(this.state.Players[i]);
+                if (this.state.HasScores()) score = this.state.GetPlayerScore(this.state.Players[i]);
                 var extra = "";
                 if (this.playerName == this.state.Players[i] ){
                     extra += "(Me)"
@@ -231,7 +236,11 @@ function Game(updateGameStateInfoHandler){
             }
 
         }
-        this.updateGameStateInfoHandler(text);
+        this.updateGameStateHandler(text, this.state);
+    }
+    this.sendUpdateGameMessage = function(){
+        //TODO replace line below with rpc call to all players
+        this.receiveUpdateGameMessage(this.state);
     }
 }
 //The GameState is calculated by the active player and shared with all other players at the end of each turn.
@@ -254,8 +263,33 @@ function GameState () {
     // Note first TurnState is only interesting in terms of initial bag state and each
     //player's tray state
     this.History = [];
+    this.GetLastTurn = function(){
+        var lastTurn = null;
+        if (this.History.length >=1 ) {
+            lastTurn =  this.History[this.History.length-1].turn;
+        }
+        return lastTurn;
+    }
+    this.GetMyTrayState =function (playerName) {
+        var trayState = null;
+        if (this.History.length >=1 ) {
+            var trays = this.History[this.History.length-1].GetTrayStates();
+            if (trays) {
+                for (var i=0;i<trays.length;i++){
+                    if (trays[i].GetPlayer() == playerName){
+                        trayState = trays[i]
+                        break;
+                    }
+                }
+            }
+       }
+       return trayState;
+    }
     this.AddTurnState = function(turnState){
         this.History.push(turnState);
+    }
+    this.HasScores = function(){
+        return (this.History.length > 0);
     }
     this.GetBagSize = function(){
         var count = 0;
@@ -264,6 +298,10 @@ function GameState () {
            count = this.History[this.History.length-1].GetBagSize();
         }
         return count;
+    }
+    this.GetPlayerScore = function (playerName){
+       var lastTurnState = this.History[this.History.length-1];
+       return lastTurnState.GetPlayerScore(playerName);
     }
     this.GetGameOwner = function(){
         return this.Players[ this.GameOwner];

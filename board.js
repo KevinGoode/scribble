@@ -92,7 +92,7 @@ function BoardState() {
         }
         for (var i=0;i<this.letters.length;i++){
             var lett = this.letters[i];
-            if ((lett.positionType == "board") && (lett.position.x == letter.position.x) && (lett.position.y == letter.position.y)){
+            if ((lett.positionType == "board") && (lett.x == letter.x) && (lett.y == letter.y)){
                 this.letters.splice(i,1);
                 return;
             }
