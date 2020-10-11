@@ -51,7 +51,23 @@ function GameBoard(game, name) {
     game.load.image('TripleLetter', 'assets/TripleLetter.jpg');
     //Dynamic state
     this.state = {} //GameState
-
+    
+    this.GetLiveLetters = function(){
+        //Get letter rather than sprites
+        var living = [];
+        for (var i=0;i<this.letters.length;i++){
+            if (this.letters[i].alive){
+                let letterCopy = Object.assign({}, ALPHABET_DICTIONARY[this.letters[i].name]);
+                var square = this.squares.getClosestTo(this.letters[i]);
+                //Inside sprite we stored boardPosition
+                letterCopy.x = square.boardPosition.x
+                letterCopy.y = square.boardPosition.y
+                letterCopy.square =square.squareName;
+                living.push(letterCopy);
+            }
+        }
+        return living;
+    }
     this.CanIDropLetter = function (point, letterSprite){
       if(point.x > (this.origx + this.boardWidth) || point.x < this.origx  || point.y > (this.origy + this.boardHeight || point.y < this.origy)){
           return false;
@@ -129,7 +145,9 @@ function GameBoard(game, name) {
             x=origx;
             for (var j=0;j<board2DArray[i].length;j++){
                 var sprite=this.squares.create(x, y, board2DArray[i][j].image);
-                board2DArray[i][j].sprite = sprite; //This might be useful
+                //Add a couple of extra properties to squares for later use
+                sprite.boardPosition = {x: j, y:i};
+                sprite.squareName = board2DArray[i][j].image;
                 x += TILE_WIDTH;
             }
             y += TILE_HEIGHT;

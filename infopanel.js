@@ -18,7 +18,17 @@ function InfoPanel (game,  x, y, width, height, font, textColour, defaultText, d
     //This got me confgused, the x,y is relative to graphics
     graphics.drawRoundedRect( 0, 0, width, height);
    
-
+    this.GetLiveLetters = function(){
+        //Get letter rather than sprite
+        var living = [];
+        for (var i=0;i<this.letters.length;i++){
+            if (this.letters[i].alive){
+                let letterCopy = Object.assign({}, ALPHABET_DICTIONARY[this.letters[i].name]);
+                living.push(letterCopy);
+            }
+        }
+        return living;
+    }
     this.CanIDropLetter = function (point, letterSprite){
          //Can always drop a letter back in panel if letter over panel and panel supports drop
          if(point.x > (this.x + this.width) || point.x < this.x || point.y > (this.y + this.height) || point.y < this.y){

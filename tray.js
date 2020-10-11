@@ -76,6 +76,8 @@ function Tray (game, onDragFunc, onDropFunc) {
             var trayItem = this.getEmptyPosition();
             var pos = this.getLetterPosFromTileSquarePos(letters[i].size,trayItem.sprite.position);
             var letterSprite = this.group.create(pos.x, pos.y, letters[i].name)
+            //Store name . This is useful when we convert sprites back to state objects later
+            letterSprite.name = letters[i].name;
             trayItem.letterSprite = letterSprite;
             this.addLetter(letterSprite);
         }

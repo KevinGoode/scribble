@@ -41,15 +41,16 @@ function Bag () {
        //Loop through all playernames and pick a letter
        //Whoever has lowest letter pick first then go around clockwise
        //picking letters until everybody has 7
+       //NB If two people get same letter then first turn is first person to get letter
        var intialTrayStates = [];
        var finalTrayStates = [];
-       var lowestLetter = '[' ;//This is ascii character after Z
+       var lowestOrder = 50; 
        var lowestIndex = 0;
        for (var i=0;i<playerNames.length;i++){
            var trayState = new TrayState(playerNames[i]);
            var letter = this.getTrayLetter(0);
            trayState.AddLetter(letter);
-           if (letter.name <lowestLetter){
+           if (letter.order <lowestOrder){
             lowestIndex = i;
            }
            intialTrayStates.push(trayState);

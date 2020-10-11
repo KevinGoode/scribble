@@ -10,12 +10,14 @@ function QuestionResponse(yes, message) {
 }
 var OK_RESPONSE = new QuestionResponse(true,"");
 
-function Game(updateGameStateHandler){
+function Game(updateGameStateHandler, board, dropBox){
     this.updateGameStateHandler = updateGameStateHandler
     this.gameStarted = false;
     this.gameCreated = false ;//Can be also used to indicate whether joined game
     this.gameName = "";
     this.playerName = "";
+    this.board = board;
+    this.dropBox = dropBox;
     this.state = null;
     
     this.GetMyPlayerName = function (){
@@ -89,6 +91,12 @@ function Game(updateGameStateHandler){
         } else if (!this.CanIGo()){
             var msg = "Cannot change letters. It is not your turn."
             return new QuestionResponse(false, msg);
+        }else if(this.board.GetLiveLetters().length > 0){
+            var msg = "Cannot change letters. Remove letters from board first.";
+            return new QuestionResponse(false, msg);
+        }else if(this.dropBox.GetLiveLetters().length < 1){
+            var msg = "Cannot change letters. No letters in drop box.";
+            return new QuestionResponse(false, msg);
         }
         return OK_RESPONSE
     }
@@ -98,6 +106,9 @@ function Game(updateGameStateHandler){
             return new QuestionResponse(false, msg);
         }else if (!this.CanIGo()){
             var msg = "Cannot end turn. It is not your turn."
+            return new QuestionResponse(false, msg);
+        }else if(this.dropBox.GetLiveLetters().length > 0){
+            var msg = "Cannot end turn if there are letters in letter drop";
             return new QuestionResponse(false, msg);
         }
         return OK_RESPONSE
@@ -129,8 +140,9 @@ function Game(updateGameStateHandler){
     this.EndTurn = function (){
         var response = this.CanIEndTurn();
         if (response.Yes){
-            //TODO update state , send message to server to update all other players
-            alert("EndTurn - todo");
+           if(this.checkValidTurn()){
+
+           }
         }
     }
     this.EndGame = function (){
@@ -186,6 +198,10 @@ function Game(updateGameStateHandler){
             this.playerName=playerName;
             alert("JoinGame - todo");
         }
+    }
+    this.checkValidTurn = function(){
+        var letters = this.board.GetLiveLetters();
+        return false;
     }
     this.amIGameOwner = function() {
         return (this.playerName != "" && this.state && this.state.GetGameOwner() == this.playerName );
