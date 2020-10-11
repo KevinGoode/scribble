@@ -36,6 +36,7 @@ function GameBoard(game, name) {
     this.boardHeight = 0;
     this.origx = 0;
     this.origy = 0;
+    this.squares = null;
     //Dynamic game properties
     this.letters = [] ;
 
@@ -75,8 +76,15 @@ function GameBoard(game, name) {
         console.log("Dropping letter on board:" + letterSprite.key);
         //Letter can be moved around alot so only add if not added already
         if (!this.isLetterOnBoard(letterSprite)) this.letters.push(letterSprite);
+        this.positionNicely(letterSprite);
         this.logCurrentLetters();
        }
+    }
+    this.positionNicely = function (letterSprite){
+       var square = this.squares.getClosestTo(letterSprite);
+       var pos = this.getLetterPosFromTileSquarePos(letterSprite.width,square.position);
+       letterSprite.x = pos.x;
+       letterSprite.y = pos.y;
     }
     this.logCurrentLetters = function(){
         var text = "Current letters on board: "
@@ -106,16 +114,21 @@ function GameBoard(game, name) {
         }
         return false;
     }
-
+    this.getLetterPosFromTileSquarePos = function(letterSize, squarePoint){
+        var offset = (TILE_WIDTH-letterSize)/2;
+        var point = {x: squarePoint.x+offset, y:squarePoint.y+offset};
+        return point;
+    }
     this.initBoard = function(origx,origy,board2DArray){
         this.origx = origx;
         this.origy = origy;
         var x = origx;
         var y = origy;
+        this.squares = this.game.add.group();
         for (var i=0;i<board2DArray.length;i++){
             x=origx;
             for (var j=0;j<board2DArray[i].length;j++){
-                var sprite=this.game.add.sprite(x, y, board2DArray[i][j].image);
+                var sprite=this.squares.create(x, y, board2DArray[i][j].image);
                 board2DArray[i][j].sprite = sprite; //This might be useful
                 x += TILE_WIDTH;
             }

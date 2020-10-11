@@ -228,20 +228,19 @@ function onChangeLetters(button){
     }
 }
 function onDragStop(sprite, pointer) {
-    var message = sprite.key + " dropped at x:" + pointer.x + " y: " + pointer.y;
-    console.log(message);
-
-    if(Board.CanIDropLetter(pointer, sprite)){
+    var myGo = GameEngine.CanIGo();
+    if( myGo && Board.CanIDropLetter(pointer, sprite)){
         Board.DropLetter(pointer, sprite);
         //Letter could have come from following sources so delete from here:
         Tray.RemoveLetter(sprite);
         dropPanel.RemoveLetter(sprite);
     }else if (Tray.CanIDropLetter(pointer, sprite)){
+        //NOTE CAN MOVE TILES AROUND ON TRAY EVEN IF IT IS NOT MYGO
         Tray.DropLetter(pointer, sprite);
         //Letter could have come from following sources so delete from here:
         Board.RemoveLetter(sprite);
         dropPanel.RemoveLetter(sprite);
-    }else if (dropPanel.CanIDropLetter(pointer, sprite)){
+    }else if (myGo &&  dropPanel.CanIDropLetter(pointer, sprite)){
         dropPanel.DropLetter(pointer, sprite);
         //Letter could have come from following sources so delete from here:
         Board.RemoveLetter(sprite);
