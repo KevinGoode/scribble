@@ -31,9 +31,14 @@ function GameBoard(game, name) {
     //Static display properties
     this.name = name;
     this.game = game;
+    //Static (set after init)
+    this.boardWidth = 0;
+    this.boardHeight = 0;
+    this.origx = 0;
+    this.origy = 0;
     //Dynamic game properties
-    this.letters = []
-    
+    this.letters = [] ;
+
     //Fullboard
     game.load.image('board', 'assets/board.jpg');
     //Squares
@@ -46,25 +51,78 @@ function GameBoard(game, name) {
     //Dynamic state
     this.state = {} //GameState
 
+    this.CanIDropLetter = function (point, letterSprite){
+      if(point.x > (this.origx + this.boardWidth) || point.x < this.origx  || point.y > (this.origy + this.boardHeight || point.y < this.origy)){
+          return false;
+      }else if(this.isOverOtherLetter(letterSprite)){
+        return false;
+      }
+      return true;
+    }
+    this.RemoveLetter = function(letterSprite){
+        for (var i=0;i<this.letters.length;i++){
+            if (letterSprite == this.letters[i]){
+                this.letters.splice(i,1);
+                console.log("Removing a letter from board:" + letterSprite.key)
+                this.logCurrentLetters();
+                return
+            }
+        }
+        return;
+    }
+    this.DropLetter = function(point, letterSprite){
+       if (this.CanIDropLetter(point, letterSprite)){
+        console.log("Dropping letter on board:" + letterSprite.key);
+        //Letter can be moved around alot so only add if not added already
+        if (!this.isLetterOnBoard(letterSprite)) this.letters.push(letterSprite);
+        this.logCurrentLetters();
+       }
+    }
+    this.logCurrentLetters = function(){
+        var text = "Current letters on board: "
+        for (var i=0;i<this.letters.length;i++){
+            text += this.letters[i].key + " ";
+        }
+        console.log(text);
+    }
     this.SetState = function(state){
         this.state=state;
     }
     this.SetState = function(){
         return this.state;
     }
-    
+    this.isLetterOnBoard = function(letterSprite){
+        for (var i=0;i<this.letters.length;i++){
+            if (letterSprite == this.letters[i]) return true;
+        }
+        return false
+    }
+    this.isOverOtherLetter = function(letterSprite){
+        for (var i=0;i<this.letters.length;i++){
+            if (letterSprite.overlap(this.letters[i]) && this.letters[i] != letterSprite){
+                console.log(letterSprite.key + "overlaps " + this.letters[i].key)
+                return true
+            }
+        }
+        return false;
+    }
 
     this.initBoard = function(origx,origy,board2DArray){
+        this.origx = origx;
+        this.origy = origy;
         var x = origx;
         var y = origy;
         for (var i=0;i<board2DArray.length;i++){
-            x=0;
+            x=origx;
             for (var j=0;j<board2DArray[i].length;j++){
-                this.game.add.sprite(x, y, board2DArray[i][j].image);
+                var sprite=this.game.add.sprite(x, y, board2DArray[i][j].image);
+                board2DArray[i][j].sprite = sprite; //This might be useful
                 x += TILE_WIDTH;
             }
             y += TILE_HEIGHT;
         }
+        this.boardWidth = x;
+        this.boardHeight =y;
     }
 
     this.init = function(){

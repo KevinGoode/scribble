@@ -41,7 +41,7 @@ function loadImages(){
     
     Board = new  GameBoard(game, "standard");
     Tiles = new Tiles(game);
-    Tray = new Tray(game, "assets/Tray.jpg");
+    Tray = new Tray(game, onDragStart, onDragStop);
     
     game.load.image('atari', 'assets/M.jpg');
     game.load.image('sonic', 'assets/Q.jpg');
@@ -94,10 +94,10 @@ function positionStaticImages(){
     Tray.init(0, boardHeight +10)
     
     //Panels
-    scorePanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset, standardPanelWidth, standardPanelHeight*3/2,  "12px Arial;", '#50c878', "Score:\n"); //Emerald
-    dropPanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + standardPanelHeight*3/2 +10, standardPanelWidth, standardPanelHeight/2,  "12px Arial;", '#c9c9c9', "Drop:\n"); //grey
-    errorPanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + 2*(standardPanelHeight +10), standardPanelWidth, standardPanelHeight,  "12px Arial;", '#ff0000', "System:\n"); //red
-    messagePanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + 3*(standardPanelHeight +10), standardPanelWidth*2, standardPanelHeight*3/2,  "12px Arial;", '#00a5ff', "Chat:\n"); //blue
+    scorePanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset, standardPanelWidth, standardPanelHeight*3/2,  "12px Arial;", '#50c878', "Score:\n", false); //Emerald
+    dropPanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + standardPanelHeight*3/2 +10, standardPanelWidth, standardPanelHeight/2,  "12px Arial;", '#c9c9c9', "Drop:\n", true); //grey
+    errorPanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + 2*(standardPanelHeight +10), standardPanelWidth, standardPanelHeight,  "12px Arial;", '#ff0000', "System:\n", false); //red
+    messagePanel = new InfoPanel(game,  feedbackLeftAlign, firstPanelOffset + 3*(standardPanelHeight +10), standardPanelWidth*2, standardPanelHeight*3/2,  "12px Arial;", '#00a5ff', "Chat:\n", false); //blue
 
     messageParams = {
         font: '18px Arial',
@@ -227,6 +227,51 @@ function onChangeLetters(button){
         errorPanel.SetText(response.Message);
     }
 }
+function onDragStop(sprite, pointer) {
+    var message = sprite.key + " dropped at x:" + pointer.x + " y: " + pointer.y;
+    console.log(message);
+
+    if(Board.CanIDropLetter(pointer, sprite)){
+        Board.DropLetter(pointer, sprite);
+        //Letter could have come from following sources so delete from here:
+        Tray.RemoveLetter(sprite);
+        dropPanel.RemoveLetter(sprite);
+    }else if (Tray.CanIDropLetter(pointer, sprite)){
+        Tray.DropLetter(pointer, sprite);
+        //Letter could have come from following sources so delete from here:
+        Board.RemoveLetter(sprite);
+        dropPanel.RemoveLetter(sprite);
+    }else if (dropPanel.CanIDropLetter(pointer, sprite)){
+        dropPanel.DropLetter(pointer, sprite);
+        //Letter could have come from following sources so delete from here:
+        Board.RemoveLetter(sprite);
+        Tray.RemoveLetter(sprite);
+    }else{
+        //Failed to find a drop zone so move back to last position
+         sprite.x = sprite.lastx;
+         sprite.y = sprite.lasty;
+    }
+
+    /*
+    if (false)
+   {
+    console.log('input disabled on', sprite.key);
+    sprite.input.enabled = false;
+
+    sprite.sendToBack();
+   }
+   */
+
+}
+function onDragStart(sprite, pointer) {
+    //Must call move letter since if letter has already been temporarily
+    //laid on board it needs to be temporarily removed again
+    sprite.lastx = sprite.x;
+    sprite.lasty =  sprite.y;
+
+
+}
+
 function updateGameDisplay(infoText, state){
     //Main handler for receiving state updates
     var me = GameEngine.GetMyPlayerName();

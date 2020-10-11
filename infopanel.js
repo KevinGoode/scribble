@@ -1,10 +1,15 @@
-function InfoPanel (game,  x, y, width, height, font, textColour, defaultText) {
+function InfoPanel (game,  x, y, width, height, font, textColour, defaultText, drop) {
     //https://phaser.io/examples/v3/view/game-objects/text/static/speech-bubble
     // https://phaser.io/examples/v2/text/text-line-spacing
     //https://phaser.io/docs/2.6.2/Phaser.Graphics.html
     var backgroundColour = 'rgba(255,255,255,0)';
-
+    this.drop = drop;
+    this.width = width;
+    this.height = height;
+    this.x = x;
+    this.y = y;
     this.defaultText = defaultText;
+    this.letters = [];
     var graphics = game.add.graphics(x,y);
 
    
@@ -13,6 +18,46 @@ function InfoPanel (game,  x, y, width, height, font, textColour, defaultText) {
     //This got me confgused, the x,y is relative to graphics
     graphics.drawRoundedRect( 0, 0, width, height);
    
+
+    this.CanIDropLetter = function (point, letterSprite){
+         //Can always drop a letter back in panel if letter over panel and panel supports drop
+         if(point.x > (this.x + this.width) || point.x < this.x || point.y > (this.y + this.height) || point.y < this.y){
+            return false
+        }
+        return this.drop;
+    }
+    this.RemoveLetter = function(letterSprite){
+        for (var i=0;i<this.letters.length;i++){
+            if (letterSprite == this.letters[i]){
+                this.letters.splice(i,1);
+                console.log("Removing a letter from panel:" + letterSprite.key)
+                this.logCurrentLetters();
+                return
+            }
+        }
+        return;
+    }
+    this.DropLetter = function(point, letterSprite){
+        if (this.CanIDropLetter(point, letterSprite)){
+            console.log("Dropping letter on panel:" + letterSprite.key);
+            //Letter can be moved around alot so only add if not added already
+            if (!this.isLetterOnPanel(letterSprite)) this.letters.push(letterSprite);
+            this.logCurrentLetters();
+        }
+    }
+    this.isLetterOnPanel= function(letterSprite){
+        for (var i=0;i<this.letters.length;i++){
+            if (letterSprite == this.letters[i]) return true;
+        }
+        return false
+    } 
+    this.logCurrentLetters = function(){
+        var text = "Current letters on panel: "
+        for (var i=0;i<this.letters.length;i++){
+            text += this.letters[i].key + " ";
+        }
+        console.log(text);
+    }
     this.SetText = function(text){
         this.message.text = this.defaultText + text;
         while(this.message.height > height){

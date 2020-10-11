@@ -156,14 +156,14 @@ function Game(updateGameStateHandler){
             this.state.GameOwner = 0;
             this.onPlayerJoined(this.playerName);
             //TODO send request to server
-            alert("CreateGame - more todo");
+            //alert("CreateGame - more todo");
         }
     }
     this.StartGame = function() {
         var response = this.CanIStartGame();
         if (response.Yes){
             
-            alert("StartGame - todo");
+            //alert("StartGame - todo");
             //TODO add letters to trays for each player, determine who starts then send instructions to all
             this.gameStarted = true;
             var initialTurnState = this.getInitialTurnState();
