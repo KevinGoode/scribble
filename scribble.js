@@ -206,7 +206,10 @@ function onSendmessage(button){
 function onEndTurn(button){
     var response = GameEngine.CanIEndTurn();
     if (response.Yes) {
-        GameEngine.EndTurn();
+        response = GameEngine.EndTurn();
+        if (!response.Yes) {
+            errorPanel.SetText(response.Message);
+        }
     }else{
         errorPanel.SetText(response.Message);
     }

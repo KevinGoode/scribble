@@ -8,6 +8,7 @@
     var TripleLetter = {image: "TripleLetter"};
     var TILE_WIDTH = 44;
     var TILE_HEIGHT = 44;
+    var BOARD_LENGTH= 15; //IE 15 spaces wide and 15 spaces high
     
     var STANDARD_BOARD =  [
         [TripleWord, Blank, Blank, DoubleLetter,Blank,Blank,Blank,TripleWord, Blank,Blank,Blank, DoubleLetter,  Blank, Blank, TripleWord],
@@ -39,6 +40,7 @@ function GameBoard(game, name) {
     this.squares = null;
     //Dynamic game properties
     this.letters = [] ;
+    this.oldLetters = [];
 
     //Fullboard
     game.load.image('board', 'assets/board.jpg');
@@ -52,21 +54,60 @@ function GameBoard(game, name) {
     //Dynamic state
     this.state = {} //GameState
     
+    this.AreLettersStraight = function(){
+        var letters = this.GetLiveLetters();
+        var oldLetters = this.GetOldLetters();
+        var checker = new WordChecker(letters, oldLetters);
+        return checker.AreLettersStraight();
+    }
+    this.AreLettersContinuous = function() {
+        var letters = this.GetLiveLetters();
+        var oldLetters = this.GetOldLetters();
+        var checker = new WordChecker(letters, oldLetters);
+        return checker.AreLettersContinuous();
+    }
+    this.AreThereGapsInWord = function(){
+        var letters = this.GetLiveLetters();
+        var oldLetters = this.GetOldLetters();
+        var checker = new WordChecker(letters, oldLetters);
+        return checker.AreThereGapsInWord();
+    }
+    this.AreThereAdjacentLetters =function (){
+        var letters = this.GetLiveLetters();
+        var oldLetters = this.GetOldLetters();
+        var checker = new WordChecker(letters, oldLetters);
+        return checker.AreThereAdjacentLetters();
+    }
+    this.IsFirstLay = function(){
+        var letters = this.GetLiveLetters();
+        var oldLetters = this.GetOldLetters();
+        var checker = new WordChecker(letters, oldLetters);
+        return checker.IsFirstLay();
+    }
+    this.DoLettersGoThroughMiddleSquare =function (){
+        var letters = this.GetLiveLetters();
+        var oldLetters = this.GetOldLetters();
+        var checker = new WordChecker(letters, oldLetters);
+        return checker.DoLettersGoThroughMiddleSquare();
+    }
     this.GetLiveLetters = function(){
-        //Get letter rather than sprites
-        var living = [];
-        for (var i=0;i<this.letters.length;i++){
-            if (this.letters[i].alive){
-                let letterCopy = Object.assign({}, ALPHABET_DICTIONARY[this.letters[i].name]);
-                var square = this.squares.getClosestTo(this.letters[i]);
-                //Inside sprite we stored boardPosition
-                letterCopy.x = square.boardPosition.x
-                letterCopy.y = square.boardPosition.y
-                letterCopy.square =square.squareName;
-                living.push(letterCopy);
-            }
+        return this.convertSpritesToLetters(this.letters)
+    }
+    this.GetOldLetters = function(){
+        return this.convertSpritesToLetters(this.oldLetters)
+    }
+    this.convertSpritesToLetters = function(sprites){
+        var letters = [];
+        for (var i=0;i<sprites.length;i++){
+            let letterCopy = Object.assign({}, ALPHABET_DICTIONARY[sprites[i].name]);
+            var square = this.squares.getClosestTo(sprites[i]);
+            //Inside sprite we stored boardPosition
+            letterCopy.x = square.boardPosition.x
+            letterCopy.y = square.boardPosition.y
+            letterCopy.square =square.squareName;
+            letters.push(letterCopy);
         }
-        return living;
+        return letters;
     }
     this.CanIDropLetter = function (point, letterSprite){
       if(point.x > (this.origx + this.boardWidth) || point.x < this.origx  || point.y > (this.origy + this.boardHeight || point.y < this.origy)){
@@ -172,6 +213,9 @@ function BoardState() {
     // Used by Board but also instantiated by game
     //at end of each turn to keep history
     this.letters = []; //Array of tiles
+    this.GetLetters = function(){
+        return this.letters;
+    }
     this.AddLetter = function(letter){
         this.letters.push(letter)
     }

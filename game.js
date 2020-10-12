@@ -140,10 +140,12 @@ function Game(updateGameStateHandler, board, dropBox){
     this.EndTurn = function (){
         var response = this.CanIEndTurn();
         if (response.Yes){
-           if(this.checkValidTurn()){
+            response= this.checkValidTurn() 
+           if(response.Yes){
 
            }
         }
+        return response;
     }
     this.EndGame = function (){
         var response = this.CanIEndGame();
@@ -200,8 +202,32 @@ function Game(updateGameStateHandler, board, dropBox){
         }
     }
     this.checkValidTurn = function(){
-        var letters = this.board.GetLiveLetters();
-        return false;
+        if(!this.board.AreLettersStraight()){
+            var msg = "Cannot end turn. Letters are not in a straight line."
+            return new QuestionResponse(false, msg);
+        }
+        if(this.board.IsFirstLay()){
+            
+            if(!this.board.DoLettersGoThroughMiddleSquare()){
+                var msg = "Cannot end turn. A letter must must be placed on centre square"
+                return new QuestionResponse(false, msg);
+            }else if (!this.board.AreLettersContinuous()){
+                var msg = "Cannot end turn. Word must have no gaps."
+                return new QuestionResponse(false, msg);
+            }
+
+        }else{
+            //Test whether word intersects or extends an existing word with no gaps
+            if(this.board.AreThereGapsInWord()){
+                var msg = "Cannot end turn. There are gaps. Word must have no gaps."
+                return new QuestionResponse(false, msg);
+            }else if (this.board.AreThereAdjacentLetters()){
+                var msg = "Cannot end turn. Word does not intersect an existing word"
+                return new QuestionResponse(false, msg);
+            }
+        }
+       
+        return OK_RESPONSE;
     }
     this.amIGameOwner = function() {
         return (this.playerName != "" && this.state && this.state.GetGameOwner() == this.playerName );
@@ -279,6 +305,14 @@ function GameState () {
     // Note first TurnState is only interesting in terms of initial bag state and each
     //player's tray state
     this.History = [];
+    this.GetBoardState = function(){
+        var boardState = null;
+        var lastTurn = this.GetLastTurn();
+        if (lastTurn){
+            boardState = lastTurn.GetBoardState();
+        }
+        return boardState;
+    }
     this.GetLastTurn = function(){
         var lastTurn = null;
         if (this.History.length >=1 ) {

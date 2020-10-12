@@ -37,6 +37,9 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
         }
         return score;
     }
+    this.GetBoardState = function(){
+        return this.BoradState();
+    }
     this.GetBagSize = function(){
         return this.Bag.GetNumberOfLetters();
     }
