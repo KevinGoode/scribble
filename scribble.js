@@ -138,7 +138,7 @@ function positionStaticImages(){
 function create() {
     initGameArea();
     positionStaticImages();
-    GameEngine = new Game(updateGameDisplay, Board,dropPanel);
+    GameEngine = new Game(updateGameDisplay, Board,dropPanel, Tray);
 
 
 }

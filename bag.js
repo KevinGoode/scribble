@@ -1,4 +1,18 @@
-function Bag () {
+function Bag (noInit) {
+    //Gets a clone
+    this.Clone =function (){
+        //Clone letters
+        var letters = []
+        for (var i=0;i<this.letters.length;i++){
+            letters.push(Object.assign({}, this.letters[i]));
+        }
+        var newBag = new Bag(true);
+        newBag.letters = letters;
+        return newBag;
+    }
+    this.GetMaxLettersTurn =function () {
+         return 7;
+    }
     this.getInitialBag = function(){
         var unmixedBag = [];
         ALPHABET.forEach(letter => {
@@ -48,7 +62,7 @@ function Bag () {
        var lowestIndex = 0;
        for (var i=0;i<playerNames.length;i++){
            var trayState = new TrayState(playerNames[i]);
-           var letter = this.getTrayLetter(0);
+           var letter = this.GetTrayLetter(0);
            trayState.AddLetter(letter);
            if (letter.order <lowestOrder){
             lowestIndex = i;
@@ -63,18 +77,22 @@ function Bag () {
        }
        //Finally loop through finalTrays and add another 6 letters to each player in order
        for (var i=0;i<finalTrayStates.length;i++){
-            for (var j=1;j<7;j++){
-                finalTrayStates[i].AddLetter(this.getTrayLetter(j))
+            for (var j=1;j<this.GetMaxLettersTurn();j++){
+                finalTrayStates[i].AddLetter(this.GetTrayLetter(j))
             }
        }
        return finalTrayStates;
     }
-    this.getTrayLetter = function(x){
+    this.GetLetter = function(){
+        var letter = this.letters.pop();
+        return letter;
+    }
+    this.GetTrayLetter = function(x){
         var letter = this.letters.pop();
         letter.positionType="tray";
         letter.y =0;
         letter.x =x;
         return letter;
     }
-    this.letters =  this.getInitialBag()
+    if(!noInit)this.letters =  this.getInitialBag()
 }

@@ -20,6 +20,29 @@ function Tray (game, onDragFunc, onDropFunc) {
     this.state = {} //TrayState
     
 
+    this.GetTrayState = function (playerName){
+        //Get TrayState from current arrangement of letter sprites on tray sprites.
+        //This is called at end of turn
+        //Loop through all tray positions , get letter sprite as letter objects
+        trayState = new TrayState(playerName)
+        var letters = [];
+        for (var i=0;i<this.tray.length;i++){
+            if (this.tray.letterSprite){
+                let letterCopy = Object.assign({}, ALPHABET_DICTIONARY[this.tray.letterSprite.name]);
+                letterCopy.x = i
+                letterCopy.y = 1;
+                letterCopy.positionType = "tray";
+                letterCopy.owner = "playerName";
+                letters.push(letterCopy);
+            }
+        }
+        trayState.letters = letters;
+        return trayState
+    }
+
+    this.GetNumberOfLetters = function(){
+        return this.letters.length;
+    }
     this.CanIDropLetter = function (point, letterSprite){
         //Can always drop a letter back in tray if letter over tray
         if(point.x > (this.x + this.width) || point.x < this.x || point.y > (this.y + this.height) || point.y < this.y){
@@ -68,7 +91,7 @@ function Tray (game, onDragFunc, onDropFunc) {
     this.SetState = function(state){
         this.state=state;
     }
-    this.SetState = function(){
+    this.GetState = function(){
         return this.state;
     }
     this.AddLetters = function(letters){

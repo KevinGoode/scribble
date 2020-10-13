@@ -10,7 +10,7 @@ function QuestionResponse(yes, message) {
 }
 var OK_RESPONSE = new QuestionResponse(true,"");
 
-function Game(updateGameStateHandler, board, dropBox){
+function Game(updateGameStateHandler, board, dropBox, tray){
     this.updateGameStateHandler = updateGameStateHandler
     this.gameStarted = false;
     this.gameCreated = false ;//Can be also used to indicate whether joined game
@@ -19,6 +19,7 @@ function Game(updateGameStateHandler, board, dropBox){
     this.board = board;
     this.dropBox = dropBox;
     this.state = null;
+    this.tray = tray;
     
     this.GetMyPlayerName = function (){
         return this.playerName;
@@ -142,7 +143,7 @@ function Game(updateGameStateHandler, board, dropBox){
         if (response.Yes){
             response= this.checkValidTurn() 
            if(response.Yes){
-
+                this.endTurn();
            }
         }
         return response;
@@ -202,32 +203,68 @@ function Game(updateGameStateHandler, board, dropBox){
         }
     }
     this.checkValidTurn = function(){
-        if(!this.board.AreLettersStraight()){
+        var letters = this.board.GetLiveLetters();
+        var oldLetters = this.board.GetOldLetters();
+        var checker = new WordChecker(letters, oldLetters);
+        if(!checker.AreLettersStraight()){
             var msg = "Cannot end turn. Letters are not in a straight line."
             return new QuestionResponse(false, msg);
         }
-        if(this.board.IsFirstLay()){
+        if(checker.IsFirstLay()){
             
-            if(!this.board.DoLettersGoThroughMiddleSquare()){
+            if(!checker.DoLettersGoThroughMiddleSquare()){
                 var msg = "Cannot end turn. A letter must must be placed on centre square"
                 return new QuestionResponse(false, msg);
-            }else if (!this.board.AreLettersContinuous()){
+            }else if (!checker.AreLettersContinuous()){
                 var msg = "Cannot end turn. Word must have no gaps."
                 return new QuestionResponse(false, msg);
             }
 
         }else{
             //Test whether word intersects or extends an existing word with no gaps
-            if(this.board.AreThereGapsInWord()){
+            if(checker.AreThereGapsInWord()){
                 var msg = "Cannot end turn. There are gaps. Word must have no gaps."
                 return new QuestionResponse(false, msg);
-            }else if (this.board.AreThereAdjacentLetters()){
+            }else if (checker.AreThereAdjacentLetters()){
                 var msg = "Cannot end turn. Word does not intersect an existing word"
                 return new QuestionResponse(false, msg);
             }
         }
        
         return OK_RESPONSE;
+    }
+    this.endTurn = function(){
+       
+       var me = this.GetMyPlayerName();
+       //1.) Create a new turn state
+       //Take a copy of last turn then start updating it
+       var newTurnState = this.state.CloneLastTurnState();
+       var lettersOut = this.board.GetLiveLetters();
+       var count = this.tray.GetNumberOfLetters();
+       var lettersIn = [];
+       for (var i=0;i<7-count;i++){
+            var letter = newTurnState.GetLetter();
+            if (letter) lettersIn.push(letter);
+       }
+       this.tray.AddLetters(lettersIn);
+       var trayState = this.tray.GetTrayState(me);
+       //TODO newPoints =0
+       var newPoints =0;
+       trayState.SetScore(newTurnState.GetPlayerScore() + newPoints);
+       //TODO nextPlayer =0
+       var nextPlayer =0;
+       var turn = new Turn('word', lettersIn, lettersOut, me, nextPlayer)
+       newTurnState.SetTrayState(trayState)
+       newTurnState.SetTurn(turn);
+       newTurnState.UpdateBoardState(lettersOut);
+       //2.) UpdateBoard so live letters are added to old
+       this.board.EndTurn();
+
+       //3.) Update state
+       this.state.AddTurnState(newTurnState);
+       
+       //4.) Update everybody's state
+       this.sendUpdateGameMessage();
     }
     this.amIGameOwner = function() {
         return (this.playerName != "" && this.state && this.state.GetGameOwner() == this.playerName );
@@ -313,7 +350,19 @@ function GameState () {
         }
         return boardState;
     }
+    this.CloneLastTurnState =function(){
+        var last = this.GetLastTurnState();
+        return last.Clone();
+    }
+    this.GetLastTurnState = function(){
+        var lastTurnState = null;
+        if (this.History.length >0 ) {
+            lastTurnState =  this.History[0]
+        }
+        return lastTurnState;
+    }
     this.GetLastTurn = function(){
+        //Actually only gets last proper turn because there is no turn object in first turnState
         var lastTurn = null;
         if (this.History.length >=1 ) {
             lastTurn =  this.History[this.History.length-1].turn;

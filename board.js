@@ -54,42 +54,10 @@ function GameBoard(game, name) {
     //Dynamic state
     this.state = {} //GameState
     
-    this.AreLettersStraight = function(){
-        var letters = this.GetLiveLetters();
-        var oldLetters = this.GetOldLetters();
-        var checker = new WordChecker(letters, oldLetters);
-        return checker.AreLettersStraight();
+    this.EndTurn = function(){
+        //UpdateBoard so live letters are added to old
     }
-    this.AreLettersContinuous = function() {
-        var letters = this.GetLiveLetters();
-        var oldLetters = this.GetOldLetters();
-        var checker = new WordChecker(letters, oldLetters);
-        return checker.AreLettersContinuous();
-    }
-    this.AreThereGapsInWord = function(){
-        var letters = this.GetLiveLetters();
-        var oldLetters = this.GetOldLetters();
-        var checker = new WordChecker(letters, oldLetters);
-        return checker.AreThereGapsInWord();
-    }
-    this.AreThereAdjacentLetters =function (){
-        var letters = this.GetLiveLetters();
-        var oldLetters = this.GetOldLetters();
-        var checker = new WordChecker(letters, oldLetters);
-        return checker.AreThereAdjacentLetters();
-    }
-    this.IsFirstLay = function(){
-        var letters = this.GetLiveLetters();
-        var oldLetters = this.GetOldLetters();
-        var checker = new WordChecker(letters, oldLetters);
-        return checker.IsFirstLay();
-    }
-    this.DoLettersGoThroughMiddleSquare =function (){
-        var letters = this.GetLiveLetters();
-        var oldLetters = this.GetOldLetters();
-        var checker = new WordChecker(letters, oldLetters);
-        return checker.DoLettersGoThroughMiddleSquare();
-    }
+    
     this.GetLiveLetters = function(){
         return this.convertSpritesToLetters(this.letters)
     }
@@ -153,7 +121,7 @@ function GameBoard(game, name) {
     this.SetState = function(state){
         this.state=state;
     }
-    this.SetState = function(){
+    this.GetState = function(){
         return this.state;
     }
     this.isLetterOnBoard = function(letterSprite){
@@ -213,11 +181,27 @@ function BoardState() {
     // Used by Board but also instantiated by game
     //at end of each turn to keep history
     this.letters = []; //Array of tiles
+
+    //Gets a clone
+    this.Clone = function() {
+        //Clone letters
+        var letters = []
+        for (var i=0;i<this.letters.length;i++){
+            letters.push(Object.assign({}, this.letters[i]));
+        }
+        var newBoard = new BoardState();
+        newBoard.letters = letters;
+        return newBoard;
+    }
+   
+ 
     this.GetLetters = function(){
         return this.letters;
     }
-    this.AddLetter = function(letter){
-        this.letters.push(letter)
+    this.AddLetters = function(letters){
+        for (var i=0;i<letters.length;i++){
+            this.letters.push(letters[i])
+        }
     }
     this.RemoveLetter = function(letter){
         if (letter.positionType != 'board'){

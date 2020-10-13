@@ -27,6 +27,31 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
     this.TrayStates = trayStates; //Array of TrayStates
     this.MessageBuffer = messageBuffer ; //String
     this.Turn = turn ; //Turn
+
+    this.Clone = function(){
+        return new TurnState(this.Bag.Clone(), this.BoardState.Clone(), "", null)
+    }
+    this.GetLetter = function(){
+        //Called at end of turn on clone of last turnstate
+        return this.Bag.GetLetter();
+    }
+    this.SetTurn = function (turn){
+        //Called at end of turn on clone of last turnstate
+        this.Turn = turn;
+    }
+    this.UpdateBoardState = function (letters){
+        //Called at end of turn on clone of last turnstate
+        this.BoardState.AddLetters(letters);
+    }
+    this.SetTrayState = function (trayState){
+        //Called at end of turn on clone of last turnstate
+        for (var i=0;i<this.TrayStates.length;i++){
+            if (trayState.GetPlayer() == this.TrayStates[i].GetPlayer()){
+                this.TrayStates[i] = trayState;
+                break;
+            }
+        }
+    }
     this.GetPlayerScore = function (playerName){
         var score = 0;
         for (var i=0;i<this.TrayStates.length;i++){
@@ -38,7 +63,7 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
         return score;
     }
     this.GetBoardState = function(){
-        return this.BoradState();
+        return this.BoardState;
     }
     this.GetBagSize = function(){
         return this.Bag.GetNumberOfLetters();
