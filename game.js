@@ -295,7 +295,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             if(checker.AreThereGapsInWord()){
                 var msg = "Cannot end turn. There are gaps. Word must have no gaps."
                 return new QuestionResponse(false, msg);
-            }else if (checker.AreThereAdjacentLetters()){
+            }else if (!checker.AreThereAdjacentLetters()){
                 var msg = "Cannot end turn. Word does not intersect an existing word"
                 return new QuestionResponse(false, msg);
             }
@@ -485,7 +485,7 @@ function GameState () {
     this.GetLastTurnState = function(){
         var lastTurnState = null;
         if (this.History.length >0 ) {
-            lastTurnState =  this.History[0]
+            lastTurnState =  this.History[this.History.length-1]
         }
         return lastTurnState;
     }

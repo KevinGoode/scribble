@@ -50,12 +50,14 @@ function WordChecker (letters, oldLetters) {
                     yPositions.push(this.letters[i].y)
                 }
                 //All x's the same so just get first
-                var x = this.letters[0];
+                var x = this.letters[0].x;
                 var sorted = yPositions.sort();
                 for (var i=1;i< sorted.length;i++){
                     if (sorted[i] != (sorted[i-1] + 1)){
                         //Found gap in new letters
-                        if (!this.IsOldLetterHere(x, sorted[i])) return true
+                        for (var j=sorted[i-1]+1;j<sorted[i]; j++) {
+                            if (!this.IsOldLetterHere(x, j)) return true
+                        }
                     }
                 }
 
@@ -65,12 +67,14 @@ function WordChecker (letters, oldLetters) {
                     xPositions.push(this.letters[i].x)
                 }
                 //All y's the same so just get first
-                var y = this.letters[0];
+                var y = this.letters[0].y;
                 var sorted = xPositions.sort();
                 for (var i=1;i< sorted.length;i++){
                     if (sorted[i] != (sorted[i-1] + 1)){
                         //Found gap in new letters
-                        if (!this.IsOldLetterHere(sorted[i], y)) return true
+                        for (var j=sorted[i-1]+1;j<sorted[i]; j++) {
+                            if (!this.IsOldLetterHere(j, y)) return true
+                        }
                     }
                 }
             }
@@ -83,16 +87,16 @@ function WordChecker (letters, oldLetters) {
             return false;
         }
         this.IsOldLetterAdjacent = function(x, y) {
-            var left, right, up, down = nil;
-            if( x > 0) left = {x: this.oldLetters[i].x -1, y: this.oldLetters[i].y}
-            if (x < (BOARD_LENGTH-1)) right = {x: this.oldLetters[i].x + 1, y: this.oldLetters[i].y} 
-            if( y > 0) up = {x: this.oldLetters[i].x, y: this.oldLetters[i].y - 1}
-            if (y < (BOARD_LENGTH-1)) down = {x: this.oldLetters[i].x, y: this.oldLetters[i].y + 1} 
+            var left, right, up, down = null;
+            if( x > 0) left = {x: x -1, y: y}
+            if (x < (BOARD_LENGTH-1)) right = {x: x + 1, y: y} 
+            if( y > 0) up = {x: x, y: y - 1}
+            if (y < (BOARD_LENGTH-1)) down = {x: x, y: y + 1} 
             for (var i=0;i<this.oldLetters.length;i++){
-                if (left && left.x == this.oldLetters[i].y && left.y == this.oldLetters[i].y) return true;
-                if (right && right.x == this.oldLetters[i].y && right.y == this.oldLetters[i].y) return true;
-                if (up && up.x == this.oldLetters[i].y && up.y == this.oldLetters[i].y) return true;
-                if (down && down.x == this.oldLetters[i].y && down.y == this.oldLetters[i].y) return true;
+                if (left && left.x == this.oldLetters[i].x && left.y == this.oldLetters[i].y) return true;
+                if (right && right.x == this.oldLetters[i].x && right.y == this.oldLetters[i].y) return true;
+                if (up && up.x == this.oldLetters[i].x && up.y == this.oldLetters[i].y) return true;
+                if (down && down.x == this.oldLetters[i].x && down.y == this.oldLetters[i].y) return true;
             }
             return false;
         }
