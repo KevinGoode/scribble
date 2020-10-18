@@ -82,21 +82,17 @@ function WordChecker (letters, oldLetters) {
         }
         this.IsOldLetterHere = function(x, y) {
             for (var i=0;i<this.oldLetters.length;i++){
-                if ((this.oldLetters[i].x == x)  && (this.oldLetters[i].y == y)) return true;
+                if ((this.oldLetters[i].x == x)  && (this.oldLetters[i].y == y)) return this.oldLetters[i];
             }
-            return false;
+            return null;
         }
         this.IsOldLetterAdjacent = function(x, y) {
-            var left, right, up, down = null;
-            if( x > 0) left = {x: x -1, y: y}
-            if (x < (BOARD_LENGTH-1)) right = {x: x + 1, y: y} 
-            if( y > 0) up = {x: x, y: y - 1}
-            if (y < (BOARD_LENGTH-1)) down = {x: x, y: y + 1} 
+            var nb = this.getNeighbours(x, y);
             for (var i=0;i<this.oldLetters.length;i++){
-                if (left && left.x == this.oldLetters[i].x && left.y == this.oldLetters[i].y) return true;
-                if (right && right.x == this.oldLetters[i].x && right.y == this.oldLetters[i].y) return true;
-                if (up && up.x == this.oldLetters[i].x && up.y == this.oldLetters[i].y) return true;
-                if (down && down.x == this.oldLetters[i].x && down.y == this.oldLetters[i].y) return true;
+                if (nb.left && nb.left.x == this.oldLetters[i].x && nb.left.y == this.oldLetters[i].y) return true;
+                if (nb.right && nb.right.x == this.oldLetters[i].x && nb.right.y == this.oldLetters[i].y) return true;
+                if (nb.up && nb.up.x == this.oldLetters[i].x && nb.up.y == this.oldLetters[i].y) return true;
+                if (nb.down && nb.down.x == this.oldLetters[i].x && nb.down.y == this.oldLetters[i].y) return true;
             }
             return false;
         }
@@ -119,11 +115,218 @@ function WordChecker (letters, oldLetters) {
             }
             return false;
         }
+        this.GetScore = function() {
+            var mainWord = this.getScoreOfMainWord();
+            var score =mainWord.score;
+            var scores = this.getScoresOfOtherWords(mainWord);
+            for (var i=0;i<scores.length;i++){
+                score +=scores[i].score;
+            }
+            return score;
+        }
         this.isIntArrayContinuous = function(array){
             var sorted = array.sort();
             for (var i=1;i< sorted.length;i++){
                 if (sorted[i] != (sorted[i-1] + 1)) return false;
             }
             return true;
+        }
+        this.getScoreOfMainWord = function(){
+            var isVertical = true;
+            var word = this.getLettersClone();
+            var insertions = [] ; //used if word criss-crosses another
+            
+            if (this.IsWordVertical()){
+                //Sort word from top to bottom
+                word.sort((a, b) => (a.y > b.y) ? 1 : -1)
+                //All x's the same so just get first
+                var x = word[0].x;
+                var above = this.IsOldLetterHere(x, word[0].y-1)
+                var below = this.IsOldLetterHere(x, word[word.length-1].y+1)
+                if (above)  word.splice(0, 0 , above);
+                if (below)  word.push(below);
+                //Grab inserted characters and insert later
+                var insertions = []
+                for (var i=1;i<word.length;i++){
+                    if (word[i].y != (word[i-1].y + 1)){
+                        //Found gap in new letters
+                        for (var j=word[i-1].y+1;j<word[i].y; j++) {
+                            //Should have already validated word so we know there is an old letter here
+                            insertions.push({old: this.IsOldLetterHere(x, j), index: i});
+                        }
+                    }
+                }
+
+            }else if (this.IsWordHorizontal()){
+                isVertical = false;
+                //Sort word from left to right
+                word.sort((a, b) => (a.x > b.x) ? 1 : -1)
+                //All x's the same so just get first
+                var y = word[0].y;
+                var left = this.IsOldLetterHere(word[0].x-1, y)
+                var right = this.IsOldLetterHere(word[word.length-1].x+1, y)
+                if (left)  word.splice(0, 0 , left)
+                if (right)  word.push(right);
+                for (var i=1;i<word.length;i++){
+                    if (word[i].x != (word[i-1].x + 1)){
+                        //Found gap in new letters
+                        for (var j=word[i-1].x+1;j<word[i].x; j++) {
+                            //Should have already validated word so we know there is an old letter here
+                            insertions.push({old: this.IsOldLetterHere(j, y), index: i});
+                        }
+                    }
+                }
+            }
+            //Go through and insert insertions to form complete word
+            for (var i=0;i<insertions.length;i++){
+                word.splice(insertions[i].index, 0 , insertions[i].old)
+            }
+            //We have word now calculate score
+            return this.getScoreOfWord(word, isVertical);
+            
+        }
+        this.getNeighbours = function(x,y){
+            var left, right, up, down = null;
+            if( x > 0) left = {x: x -1, y: y}
+            if (x < (BOARD_LENGTH-1)) right = {x: x + 1, y: y} 
+            if( y > 0) up = {x: x, y: y - 1}
+            if (y < (BOARD_LENGTH-1)) down = {x: x, y: y + 1} 
+            return {left: left, right: right, up: up, down:down}
+        }
+        this.getScoreOfWord= function(word, isVertical){
+            var wordScore = 0;
+            var doubleWord =false;
+            var tripleWord = false;
+            var name = "";
+            //word is an ordered array of old and new letters
+            for (var i=0;i<word.length;i++){
+                name += word[i].name;
+                var letterScore = word[i].points;
+                if (word[i].new && (word[i].square == "DoubleLetter")) letterScore=letterScore*2;
+                if (word[i].new && (word[i].square == "TripleLetter")) letterScore=letterScore*3;
+                if (word[i].new && (word[i].square == "DoubleWord")) doubleWord = true;
+                if (word[i].new && (word[i].square == "TripleWord")) tripleWord = true;
+                wordScore+=letterScore;
+            }
+            if (doubleWord) wordScore = wordScore*2;
+            if (tripleWord) wordScore = wordScore*3;
+            console.log("Word "+ name + " has score " + wordScore.toString());
+            return {score: wordScore, name: name, isVertical:isVertical, letters: word}
+        }
+        this.getScoresOfOtherWords = function(mainWord){
+            var scores = [];
+            for (var i=0;i<mainWord.letters.length;i++){
+                var nb = this.getAdjacentLetters(mainWord.letters[i].x, mainWord.letters[i].y);
+                //The main word may contain old letters.
+                //These must be ignored when considering other
+                //perpendicular words 
+                //Single new word to left
+                var word = [];
+                if (mainWord.letters[i].new){
+                   if(mainWord.isVertical){
+                      //Get left and right characters and calculate the score of horizontal words
+                      if (nb.left || nb.right){
+                            word.push(mainWord.letters[i]);
+                            //This should also work in unlikely scenario where a vertical word comes between
+                            //two hozizontal making a single new word. IE letters to left and to right
+                        if (nb.left){  
+                            word.push(nb.left);
+                            var x = nb.left.x -1;
+                            var y = nb.left.y;
+                            old=this.IsOldLetterHere(x, y)
+                            while (old){
+                                word.push(old)
+                                x--;
+                                old=this.IsOldLetterHere(x, y)
+                            }
+                        }//LEft
+                        if (nb.right){
+                            word.push(nb.right);
+                            var x = nb.right.x +1;
+                            var y = nb.right.y;
+                            old=this.IsOldLetterHere(x, y)
+                            while (old){
+                                word.push(old)
+                                x++;
+                                old=this.IsOldLetterHere(x, y)
+                            }
+                        }//Right
+                        //Add a new horizontal word
+                        if (word.length>0){
+                            //Sort by Y
+                            word.sort((a, b) => (a.y > b.y) ? 1 : -1)
+                            scores.push(this.getScoreOfWord(word,false));
+                        }
+
+                      } //Left or rigth
+                   }else {
+                       //Get left and right characters and calculate the score of horizontal words
+                      if (nb.up || nb.down){
+                        word.push(mainWord.letters[i]);
+                        //This should also work in unlikely scenario where a horizontal word comes between
+                        //two vertical making a single new word. IE letters up and down
+                        if (nb.up){  
+                            word.push(nb.up);
+                            var y = nb.up.y -1;
+                            var x = nb.up.x;
+                            old=this.IsOldLetterHere(x, y)
+                            while (old){
+                                word.push(old)
+                                y--;
+                                old=this.IsOldLetterHere(x, y)
+                            }
+                        }//Up
+                        if (nb.down){
+                            word.push(nb.down);
+                            var y = nb.down.y + 1;
+                            var x = nb.down.x;
+                            old=this.IsOldLetterHere(x, y)
+                            while (old){
+                                word.push(old)
+                                y++;
+                                old=this.IsOldLetterHere(x, y)
+                            }
+                        }//Down
+                        //Add a new vertical word
+                        if (word.length>0){
+                             //Sort by X
+                             word.sort((a, b) => (a.x > b.x) ? 1 : -1)
+                            scores.push(this.getScoreOfWord(word,true));
+                        }
+                      }//up or down
+                   }// else If verttical
+                }//If new
+              } //End of for
+           return scores;
+        }
+        this.getAdjacentLetters = function(x, y) {
+            var adjacent = {}
+            var nb = this.getNeighbours(x, y);
+            for (var i=0;i<this.oldLetters.length;i++){
+                if (nb.left && nb.left.x == this.oldLetters[i].x && nb.left.y == this.oldLetters[i].y){
+                    adjacent.left = this.oldLetters[i];
+                }
+                else if (nb.right && nb.right.x == this.oldLetters[i].x && nb.right.y == this.oldLetters[i].y){
+                    adjacent.right = this.oldLetters[i];
+                }
+                else if (nb.up && nb.up.x == this.oldLetters[i].x && nb.up.y == this.oldLetters[i].y){
+                    adjacent.up = this.oldLetters[i];
+                }
+                else if (nb.down && nb.down.x == this.oldLetters[i].x && nb.down.y == this.oldLetters[i].y){
+                    adjacent.down = this.oldLetters[i];
+                }
+            }
+            return adjacent;
+        }
+        this.getLettersClone = function(){
+           //Clones array and inserts a 'new' flag to distinguish betweeen
+           //old letters we might insert
+           var cloneArray = [];
+           for (var i=0;i<this.letters.length;i++){
+               var clone =  Object.assign({}, this.letters[i]);
+               clone.new = true;
+               cloneArray.push(clone);
+           }
+           return cloneArray;
         }
     }

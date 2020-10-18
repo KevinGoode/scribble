@@ -66,6 +66,7 @@ function GameBoard(game, name) {
         var boardPos = {x: letters[i].x, y:letters[i].y}
         var pos = this.getLetterPosFromTileSquarePos(letters[i].size, this. boardPosToScreenPos(boardPos));
         var letterSprite = this.game.add.sprite(pos.x, pos.y, letters[i].name);
+        letterSprite.name = letters[i].name;
         this.oldLetters.push(letterSprite);
        }
     }

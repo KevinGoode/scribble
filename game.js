@@ -305,10 +305,14 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     }
 
     this.endTurn = function(){
-       
+       var letters = this.board.GetLiveLetters();
+       var oldLetters = this.board.GetOldLetters();
+       var checker = new WordChecker(letters, oldLetters);
+       var newPoints =checker.GetScore();
        var me = this.GetMyPlayerName();
        //1.) Create a new turn state
        //Take a copy of last turn then start updating it
+       
        var newTurnState = this.state.CloneLastTurnState();
        var lettersOut = this.board.GetLiveLetters();
        var count = this.tray.GetNumberOfLetters();
@@ -319,8 +323,6 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        }
        this.tray.AddLetters(lettersIn);
        var trayState = this.tray.GetTrayState(me);
-       //TODO newPoints =0
-       var newPoints =0;
        trayState.SetScore(newTurnState.GetPlayerScore() + newPoints);
        //TODO nextPlayer =0
        var nextPlayer =0;
