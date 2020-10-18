@@ -11,7 +11,7 @@ var NewGameButton;
 var JoinGameButton;
 var StartGameButton;
 var EndGameButton;
-var EndTurnButton;
+var SubmitButton;
 var UndoButton;
 var SendMessageButton;
 var ChangeLettersButton;
@@ -52,12 +52,14 @@ function loadImages(){
     JoinGameButton = new Button(game,"JoinGame", "assets/JoinGame.png", 150, 58, onJoinGame);
     StartGameButton = new Button(game, "StartGame", "assets/StartGame.png", 150, 58, onStartGame);
     EndGameButton = new Button(game, "EndGame", "assets/EndGame.png", 150, 58, onEndGame);
-    EndTurnButton = new Button(game, "EndTurn", "assets/EndTurn.png", 150, 58,onEndTurn);
+    EndTurnButton = new Button(game, "EndTurn", "assets/EndTurn.png", 150, 58, onEndTurn);
+    SubmitButton = new Button(game, "Submit", "assets/Submit.png", 150, 58,onSubmit);
     UndoButton = new Button(game, "Undo", "assets/Undo.png", 150, 58, onUndo);
     SendMessageButton = new Button(game, "SendMessage", "assets/SendMessage.png", 150, 58, onSendmessage);
     ChangeLettersButton = new Button(game, "ChangeLetters", "assets/ChangeLetters.png", 150, 58, onChangeLetters);
     StartGameButton = new Button(game, "StartGame", "assets/StartGame.png", 150, 58, onStartGame);
-    
+    LikeButton = new Button(game, "Like", "assets/Like.png", 150, 58, onLike);
+    DontLikeButton = new Button(game, "DontLike", "assets/DontLike.png", 150, 58, onDontLike);
   
 }
 function positionStaticImages(){
@@ -66,8 +68,9 @@ function positionStaticImages(){
     var boardWidth =660; //640
     var boardHeight =660; //640
     var buttonWidth =154;
-    var buttonLeftAlign = boardWidth + buttonWidth + 10;
+    var buttonRightAlign = boardWidth + buttonWidth + 10;
     var feedbackLeftAlign = boardWidth + 10;
+    var buttonLeftAlign = feedbackLeftAlign
     var topButtonsOffset = 0;//buttonHeight + 20;
     var middlesButtonsOffset = boardHeight/2;
     var bottomButtonsOffset = boardHeight-buttonHeight;
@@ -77,18 +80,20 @@ function positionStaticImages(){
 
     Board.init();
     //Buttons
-    NewGameButton.init(buttonLeftAlign, topButtonsOffset);
-    JoinGameButton.init(buttonLeftAlign, topButtonsOffset+ buttonHeight);
-    StartGameButton.init(buttonLeftAlign, topButtonsOffset+buttonHeight*2);
+    NewGameButton.init(buttonRightAlign, topButtonsOffset);
+    JoinGameButton.init(buttonRightAlign, topButtonsOffset+ buttonHeight);
+    StartGameButton.init(buttonRightAlign, topButtonsOffset+buttonHeight*2);
+    EndGameButton.init(buttonRightAlign, topButtonsOffset+buttonHeight*3);
     
-    ChangeLettersButton.init(buttonLeftAlign, topButtonsOffset+buttonHeight*4);
-    UndoButton.init(buttonLeftAlign, topButtonsOffset+buttonHeight*5);
-    EndGameButton.init(buttonLeftAlign, topButtonsOffset+buttonHeight*6);
+    ChangeLettersButton.init(buttonRightAlign, topButtonsOffset+buttonHeight*4);
+    UndoButton.init(buttonRightAlign, topButtonsOffset+buttonHeight*5);
+    EndTurnButton.init(buttonRightAlign, topButtonsOffset+buttonHeight*6);
 
 
-    EndTurnButton.init(buttonLeftAlign, topButtonsOffset+buttonHeight*10);
+    SubmitButton.init(buttonRightAlign, boardHeight);
     SendMessageButton.init(44*11, boardHeight+Tray.height +20);
-    //SendMessageButton.init(buttonLeftAlign, topButtonsOffset+buttonHeight*11);
+    LikeButton.init(44*11, boardHeight );
+    DontLikeButton.init(buttonLeftAlign, boardHeight);
 
     //Tray
     Tray.init(0, boardHeight +10)
@@ -138,7 +143,7 @@ function positionStaticImages(){
 function create() {
     initGameArea();
     positionStaticImages();
-    GameEngine = new Game(updateGameDisplay, Board,dropPanel, Tray);
+    GameEngine = new Game(updateGameDisplay, Board,dropPanel, Tray, errorPanel, messagePanel);
 
 
 }
@@ -206,10 +211,15 @@ function onSendmessage(button){
 function onEndTurn(button){
     var response = GameEngine.CanIEndTurn();
     if (response.Yes) {
-        response = GameEngine.EndTurn();
-        if (!response.Yes) {
-            errorPanel.SetText(response.Message);
-        }
+        GameEngine.EndTurn();
+    }else{
+        errorPanel.SetText(response.Message);
+    }
+}
+function onSubmit(button){
+    var response = GameEngine.CanISubmit();
+    if (response.Yes) {
+        GameEngine.Submit();
     }else{
         errorPanel.SetText(response.Message);
     }
@@ -230,20 +240,39 @@ function onChangeLetters(button){
         errorPanel.SetText(response.Message);
     }
 }
+function onLike(button){
+    var response = GameEngine.CanILike();
+    if (response.Yes) {
+        GameEngine.Like();
+    }else{
+        errorPanel.SetText(response.Message);
+    }
+}
+function onDontLike(button){
+    var response = GameEngine.CanIDontLike();
+    if (response.Yes) {
+        GameEngine.DontLike();
+    }else{
+        errorPanel.SetText(response.Message);
+    }
+}
 function onDragStop(sprite, pointer) {
     var myGo = GameEngine.CanIGo();
     if( myGo && Board.CanIDropLetter(pointer, sprite)){
+        GameEngine.PlayerIsActive();
         Board.DropLetter(pointer, sprite);
         //Letter could have come from following sources so delete from here:
         Tray.RemoveLetter(sprite);
         dropPanel.RemoveLetter(sprite);
     }else if (Tray.CanIDropLetter(pointer, sprite)){
+        if (myGo) GameEngine.PlayerIsActive();
         //NOTE CAN MOVE TILES AROUND ON TRAY EVEN IF IT IS NOT MYGO
         Tray.DropLetter(pointer, sprite);
         //Letter could have come from following sources so delete from here:
         Board.RemoveLetter(sprite);
         dropPanel.RemoveLetter(sprite);
     }else if (myGo &&  dropPanel.CanIDropLetter(pointer, sprite)){
+        GameEngine.PlayerIsActive();
         dropPanel.DropLetter(pointer, sprite);
         //Letter could have come from following sources so delete from here:
         Board.RemoveLetter(sprite);

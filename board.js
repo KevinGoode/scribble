@@ -56,6 +56,7 @@ function GameBoard(game, name) {
     
     this.EndTurn = function(){
         //UpdateBoard so live letters are added to old
+        alert("Finally got here")
     }
     
     this.GetLiveLetters = function(){

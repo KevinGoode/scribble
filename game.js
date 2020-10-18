@@ -10,7 +10,9 @@ function QuestionResponse(yes, message) {
 }
 var OK_RESPONSE = new QuestionResponse(true,"");
 
-function Game(updateGameStateHandler, board, dropBox, tray){
+
+
+function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messagePanel){
     this.updateGameStateHandler = updateGameStateHandler
     this.gameStarted = false;
     this.gameCreated = false ;//Can be also used to indicate whether joined game
@@ -18,9 +20,17 @@ function Game(updateGameStateHandler, board, dropBox, tray){
     this.playerName = "";
     this.board = board;
     this.dropBox = dropBox;
+    this.errorPanel = errorPanel
     this.state = null;
+    this.messagePanel = messagePanel
+    //Active player state can be "Active", "Waiting for Approval", "Approved"
+    this.activePlayerState =  {}
     this.tray = tray;
-    
+
+    this.PlayerIsActive = function() {
+        //Call this everytime player changes his current turnm
+        this.activePlayerState.Active();
+    }
     this.GetMyPlayerName = function (){
         return this.playerName;
     }
@@ -103,6 +113,23 @@ function Game(updateGameStateHandler, board, dropBox, tray){
     }
     this.CanIEndTurn = function(){
         if (!this.HasGameStarted()) {
+           var msg = "Cannot end turn. Game has not started yet."
+           return new QuestionResponse(false, msg);
+       } else if (!this.CanIGo()){
+           var msg = "Cannot end turn. It is not your turn."
+           return new QuestionResponse(false, msg);
+       } else if (this.activePlayerState.state == this.activePlayerState.ACTIVE_STATE){
+           var msg = "Cannot end turn. If you have finished your turn press 'Submit' to request approval"
+           return new QuestionResponse(false, msg);
+       }else if (this.activePlayerState.state == this.activePlayerState.WAITING_STATE){
+           var msg = "Cannot end turn. All players must press 'Like' before you can end turn."
+           return new QuestionResponse(false, msg);
+       }
+       //State must be 'Approved' so return ok.
+       return OK_RESPONSE;
+   }
+    this.CanISubmit = function(){
+        if (!this.HasGameStarted()) {
             var msg = "Cannot end turn. Game has not started yet."
             return new QuestionResponse(false, msg);
         }else if (!this.CanIGo()){
@@ -112,7 +139,31 @@ function Game(updateGameStateHandler, board, dropBox, tray){
             var msg = "Cannot end turn if there are letters in letter drop";
             return new QuestionResponse(false, msg);
         }
-        return OK_RESPONSE
+        return this.checkValidTurn();
+    }
+    this.CanILike = function(){
+        if (!this.HasGameStarted()) {
+            var msg = "Cannot like. Game has not started yet."
+            return new QuestionResponse(false, msg);
+        }else if (this.CanIGo()){
+            var msg = "Cannot like. You cannot like your own word"
+            return new QuestionResponse(false, msg);
+        }
+        //Restriction on clicking like are pretty loose from a not-active player point of view
+        //On active player side likes and dont likes are strictly handled
+        return OK_RESPONSE;
+    }
+    this.CanIDontLike = function(){
+        if (!this.HasGameStarted()) {
+            var msg = "Cannot 'not like'. Game has not started yet."
+            return new QuestionResponse(false, msg);
+        }else if (this.CanIGo()){
+            var msg = "Cannot 'not like'. You cannot 'not like' your own word"
+            return new QuestionResponse(false, msg);
+        }
+        //Restriction on clicking dontlike are pretty loose from a not-active player point of view
+        //On active player side likes and dont likes are strictly handled
+        return OK_RESPONSE;
     }
     this.CanIUndo = function(){
         if (!this.HasGameStarted()) {
@@ -131,6 +182,20 @@ function Game(updateGameStateHandler, board, dropBox, tray){
         }
         return OK_RESPONSE
     }
+    this.Like = function (){
+        var response = this.CanILike();
+        if (response.Yes){
+            sender = new Messenger("like", true, this.state.GetPlayers(), this.state.GetCurrentPlayerIndex(), this.playerName);
+            sender.SendToAll()
+        }
+    }
+    this.DontLike = function (){
+        var response = this.CanIDontLike();
+        if (response.Yes){
+            sender = new Messenger("like", this.state.GetPlayers(), this.state.GetCurrentPlayerIndex(), this.playerName);
+            sender.SendToAll()
+        }
+    }
     this.ChangeLetters = function (){
         var response = this.CanIChangeLetters();
         if (response.Yes){
@@ -141,10 +206,7 @@ function Game(updateGameStateHandler, board, dropBox, tray){
     this.EndTurn = function (){
         var response = this.CanIEndTurn();
         if (response.Yes){
-            response= this.checkValidTurn() 
-           if(response.Yes){
-                this.endTurn();
-           }
+             this.endTurn();
         }
         return response;
     }
@@ -202,6 +264,14 @@ function Game(updateGameStateHandler, board, dropBox, tray){
             alert("JoinGame - todo");
         }
     }
+    this.Submit = function (){
+        var response = this.CanISubmit();
+        if (response.Yes){
+            sender = new Messenger("preview", this.board.GetLiveLetters(), this.state.GetPlayers(), this.state.GetCurrentPlayerIndex(), this.playerName);
+            sender.SendToNonActive();
+            this.activePlayerState.Submit();
+        }
+    }
     this.checkValidTurn = function(){
         var letters = this.board.GetLiveLetters();
         var oldLetters = this.board.GetOldLetters();
@@ -233,6 +303,7 @@ function Game(updateGameStateHandler, board, dropBox, tray){
        
         return OK_RESPONSE;
     }
+
     this.endTurn = function(){
        
        var me = this.GetMyPlayerName();
@@ -293,6 +364,44 @@ function Game(updateGameStateHandler, board, dropBox, tray){
         var turnState = new TurnState(bag, boardState, trays, "", null);
         return turnState;
     }
+    this.receiveMessage = function(message) {
+        //This is Main Message handler
+        if (!message.type) {
+            this.errorPanel.SetText("Received message with no type")
+            return
+        }
+        if (!message.sender) {
+            this.errorPanel.SetText("Received message with no sender")
+            return
+        }
+        if (!this.state.IsPlayer(message.sender)){
+             this.errorPanel.SetText("Received message from unknown player: " + message.sender)
+            return
+        }
+        switch (message.type){
+            case "stateUpdate":
+                this.receiveUpdateGameMessage(message.body);
+                return;
+            case "chat":
+                this.messagePanel.SetText(message.sender + ": " + mesage.body + "\n");
+                return;
+            case "preview":
+                    //TODO
+                    return;
+            case "like":
+                this.receivedLikeMessage(message.sender, message.body);
+                txt = "Likes"
+                if (mesage.body == false)  txt = "Dosn't like"
+                this.messagePanel.SetText(message.sender + ": " + txt+ "\n");
+                if (this.CanIGo()){
+                    //Like only gets added if in state 'waiting'
+                    this.activePlayerState.AddLike(message.sender, message.body)
+                }
+                return;
+            default:
+                this.errorPanel.SetText("Received message with unsupported type: " + message.type)
+        };
+    }
     this.receiveUpdateGameMessage = function(state){
         //This is callback that receives a game update
         this.state = state;
@@ -313,6 +422,9 @@ function Game(updateGameStateHandler, board, dropBox, tray){
                 }
                 text += score.toString() + " " + this.state.Players[i] + extra + "\n";
             }
+            if (this.CanIGo()){
+                //It is my turn so set my active state
+                this.activePlayerState = new ActivePlayerState(this.state.GetNumberOfPlayers());          }
 
         }
         this.updateGameStateHandler(text, this.state);
@@ -342,6 +454,22 @@ function GameState () {
     // Note first TurnState is only interesting in terms of initial bag state and each
     //player's tray state
     this.History = [];
+
+    this.GetPlayers = function(){
+        return this.Players;
+    }
+    this.GetCurrentPlayerIndex = function(){
+        return this.CurrentPlayer
+    }
+    this.GetNumberOfPlayers = function(){
+      return this.Players.length;
+    }
+    this.IsPlayer = function(playerName){
+        for (var i=0;i<Players.length;i++){
+            if (playerName == Players[i]) return true;
+        }
+        return false;
+    }
     this.GetBoardState = function(){
         var boardState = null;
         var lastTurn = this.GetLastTurn();
