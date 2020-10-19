@@ -323,7 +323,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        }
        this.tray.AddLetters(lettersIn);
        var trayState = this.tray.GetTrayState(me);
-       trayState.SetScore(newTurnState.GetPlayerScore() + newPoints);
+       trayState.SetScore(newTurnState.GetPlayerScore(me) + newPoints);
        //TODO nextPlayer =0
        var nextPlayer =0;
        var turn = new Turn('word', lettersIn, lettersOut, me, nextPlayer)

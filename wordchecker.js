@@ -138,13 +138,13 @@ function WordChecker (letters, oldLetters) {
             
             if (this.IsWordVertical()){
                 //Sort word from top to bottom
-                word.sort((a, b) => (a.y > b.y) ? 1 : -1)
+                this.sortTopToBottom(word);
                 //All x's the same so just get first
                 var x = word[0].x;
                 var above = this.IsOldLetterHere(x, word[0].y-1)
                 var below = this.IsOldLetterHere(x, word[word.length-1].y+1)
-                if (above)  word.splice(0, 0 , above);
-                if (below)  word.push(below);
+                if (above)  this.insertLettersAbove(word,above);
+                if (below)  this.insertLettersBelow(word,below);
                 //Grab inserted characters and insert later
                 var insertions = []
                 for (var i=1;i<word.length;i++){
@@ -160,13 +160,13 @@ function WordChecker (letters, oldLetters) {
             }else if (this.IsWordHorizontal()){
                 isVertical = false;
                 //Sort word from left to right
-                word.sort((a, b) => (a.x > b.x) ? 1 : -1)
+                this.sortLeftToRight(word);
                 //All x's the same so just get first
                 var y = word[0].y;
                 var left = this.IsOldLetterHere(word[0].x-1, y)
                 var right = this.IsOldLetterHere(word[word.length-1].x+1, y)
-                if (left)  word.splice(0, 0 , left)
-                if (right)  word.push(right);
+                if (left)  this.insertLettersLeft(word,left);
+                if (right) this.insertLettersRight(word,right);
                 for (var i=1;i<word.length;i++){
                     if (word[i].x != (word[i-1].x + 1)){
                         //Found gap in new letters
@@ -230,34 +230,13 @@ function WordChecker (letters, oldLetters) {
                             //This should also work in unlikely scenario where a vertical word comes between
                             //two hozizontal making a single new word. IE letters to left and to right
                         if (nb.left){  
-                            word.push(nb.left);
-                            var x = nb.left.x -1;
-                            var y = nb.left.y;
-                            old=this.IsOldLetterHere(x, y)
-                            while (old){
-                                word.push(old)
-                                x--;
-                                old=this.IsOldLetterHere(x, y)
-                            }
-                        }//LEft
+                            this.insertLettersLeft(word, nb.left);
+                        }//Left
                         if (nb.right){
-                            word.push(nb.right);
-                            var x = nb.right.x +1;
-                            var y = nb.right.y;
-                            old=this.IsOldLetterHere(x, y)
-                            while (old){
-                                word.push(old)
-                                x++;
-                                old=this.IsOldLetterHere(x, y)
-                            }
+                           this.insertLettersRight(word, nb.right);
                         }//Right
                         //Add a new horizontal word
-                        if (word.length>0){
-                            //Sort by Y
-                            word.sort((a, b) => (a.y > b.y) ? 1 : -1)
-                            scores.push(this.getScoreOfWord(word,false));
-                        }
-
+                        if (word.length>0) scores.push(this.getScoreOfWord(word,false));
                       } //Left or rigth
                    }else {
                        //Get left and right characters and calculate the score of horizontal words
@@ -266,33 +245,13 @@ function WordChecker (letters, oldLetters) {
                         //This should also work in unlikely scenario where a horizontal word comes between
                         //two vertical making a single new word. IE letters up and down
                         if (nb.up){  
-                            word.push(nb.up);
-                            var y = nb.up.y -1;
-                            var x = nb.up.x;
-                            old=this.IsOldLetterHere(x, y)
-                            while (old){
-                                word.push(old)
-                                y--;
-                                old=this.IsOldLetterHere(x, y)
-                            }
+                            this.insertLettersAbove(word,nb.up)
                         }//Up
                         if (nb.down){
-                            word.push(nb.down);
-                            var y = nb.down.y + 1;
-                            var x = nb.down.x;
-                            old=this.IsOldLetterHere(x, y)
-                            while (old){
-                                word.push(old)
-                                y++;
-                                old=this.IsOldLetterHere(x, y)
-                            }
+                            this.insertLettersBelow(word, nb.down)
                         }//Down
                         //Add a new vertical word
-                        if (word.length>0){
-                             //Sort by X
-                             word.sort((a, b) => (a.x > b.x) ? 1 : -1)
-                            scores.push(this.getScoreOfWord(word,true));
-                        }
+                        if (word.length>0) scores.push(this.getScoreOfWord(word,true));
                       }//up or down
                    }// else If verttical
                 }//If new
@@ -328,5 +287,65 @@ function WordChecker (letters, oldLetters) {
                cloneArray.push(clone);
            }
            return cloneArray;
+        }
+        this.insertLettersRight =function(word, letterRight){
+            if(letterRight){
+                word.push(letterRight);
+                var x = letterRight.x +1;
+                var y = letterRight.y;
+                old=this.IsOldLetterHere(x, y)
+                while (old){
+                    word.push(old)
+                    x++;
+                    old=this.IsOldLetterHere(x, y)
+                }
+            }
+        }
+        this.insertLettersLeft = function (word, leftLetter){
+            if(leftLetter){
+                word.push(leftLetter);
+                var x = leftLetter.x -1;
+                var y = leftLetter.y;
+                old=this.IsOldLetterHere(x, y)
+                while (old){
+                    word.push(old)
+                    x--;
+                    old=this.IsOldLetterHere(x, y)
+                }
+                this.sortLeftToRight(word);
+            }
+        }
+        this.insertLettersAbove = function(word, aboveLetter){
+            if(aboveLetter){
+                word.push(aboveLetter);
+                var y = aboveLetter.y -1;
+                var x = aboveLetter.x;
+                old=this.IsOldLetterHere(x, y)
+                while (old){
+                    word.push(old)
+                    y--;
+                    old=this.IsOldLetterHere(x, y)
+                }
+                this.sortTopToBottom(word)
+            }
+        }
+        this.insertLettersBelow = function(word, belowLetter){
+            if(belowLetter){
+                word.push(belowLetter);
+                var y = belowLetter.y + 1;
+                var x = belowLetter.x;
+                old=this.IsOldLetterHere(x, y)
+                while (old){
+                    word.push(old)
+                    y++;
+                    old=this.IsOldLetterHere(x, y)
+                }
+            }
+        }
+        this.sortLeftToRight = function(arrayWithPos){
+            arrayWithPos.sort((a, b) => (a.x > b.x) ? 1 : -1)
+        }
+        this.sortTopToBottom= function(arrayWithPos){
+            arrayWithPos.sort((a, b) => (a.y > b.y) ? 1 : -1)
         }
     }

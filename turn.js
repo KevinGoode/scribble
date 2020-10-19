@@ -29,7 +29,7 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
     this.Turn = turn ; //Turn
 
     this.Clone = function(){
-        return new TurnState(this.Bag.Clone(), this.BoardState.Clone(), "", null)
+        return new TurnState(this.Bag.Clone(), this.BoardState.Clone(), this.cloneTrayStates(), null)
     }
     this.GetLetter = function(){
         //Called at end of turn on clone of last turnstate
@@ -77,5 +77,12 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
             trayState=this.TrayStates[index];
         }
         return trayState;
+    }
+    this.cloneTrayStates = function(){
+        var trayStates =[];
+        for (var i=0;i<this.TrayStates.length;i++){
+            trayStates.push(this.TrayStates[i].Clone());
+        }
+        return trayStates;
     }
 }

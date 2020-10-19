@@ -189,6 +189,12 @@ function TrayState(player) {
     this.player = player; //Player name/identifier
     this.letters = []; //Array of tiles
     this.score = 0; //Player score number
+    this.Clone = function() {
+        var trayState = new TrayState(this.player);
+        trayState.letters = this.cloneLetters();
+        trayState.score = this.score
+        return trayState;
+    }
     this.GetLetters = function(){
         return this.letters;
     }
@@ -219,5 +225,12 @@ function TrayState(player) {
     }   
     this.SetScore = function(score){
         this.score=score;
+    }
+    this.cloneLetters = function(){
+        var letters = []
+        for (var i=0;i<this.letters.length;i++){
+            letters.push(Object.assign({}, this.letters[i]));
+        }
+        return letters;
     }
 }
