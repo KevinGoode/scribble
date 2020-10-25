@@ -22,6 +22,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.dropBox = dropBox;
     this.errorPanel = errorPanel
     this.state = null;
+    this.socket  = null;
     this.messagePanel = messagePanel
     //Active player state can be "Active", "Waiting for Approval", "Approved"
     this.activePlayerState =  {}
@@ -228,12 +229,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         if (response.Yes){
             this.gameName = gameName;
             this.playerName=playerName;
-            this.gameCreated = true;
-            this.state = new GameState()
-            this.state.GameOwner = 0;
-            this.onPlayerJoined(this.playerName);
-            //TODO send request to server
-            //alert("CreateGame - more todo");
+            this.getGamesThenCreate(gameName);
         }
     }
     this.StartGame = function() {
@@ -303,7 +299,52 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        
         return OK_RESPONSE;
     }
+    this.getGamesThenCreate = function(gameName){
+        var that = this;
+        $.ajax({
+            url: "rest/scribble",
+            type: 'GET',
+            contentType: 'application/json; charset=utf-8',
+            success: function(data, ok, response){that.getGamesCreateIfOk(gameName, data);},
+            error: function(error){that.getGamesNotOk();}});
+    }
+    this.getGamesCreateIfOk = function(gameName, data){
+        if (data.includes(gameName)) {
+            this.errorPanel.SetText("Game already exists with this name. Use a different name.")
+        }else {
+            this.createGame(gameName);
+        }
+    };
+    this.getGamesNotOk = function() {
+        this.errorPanel.SetText("Error validating game name")
+    };
+    this.createGame = function(gameName){
+        var that = this;
+        $.ajax({
+            url: "rest/scribble",
+            type: 'POST',
+            data: '{"name":"' +  gameName + '"}',
+            contentType: 'application/json',
+            success: function(data, ok, response){that.gameSuccessfullyCreated();},
+            error: function(error){that.gameFailedToCreate();}});
+    }
+    this.gameSuccessfullyCreated = function() {
+        this.gameCreated = true;
+        this.state = new GameState()
+        this.state.GameOwner = 0;
+        //Init socket
+        this.socket = io.connect('http://' + document.domain + ':' + location.port + '/scribble/' + this.gameName);
+        this.socket.on('game message', function(msg) { this.receiveMessage(msg)});
+        this.socket.on('connect', function(msg) { this.errorPanel.SetText("Successfuly connected to game server")});
+        this.socket.on('disconnect', function(msg) { this.errorPanel.SetText("Disconnected from game server")});
 
+        this.onPlayerJoined(this.playerName);
+        //TODO send request to server
+        //alert("CreateGame - more todo");
+    };
+    this.gameFailedToCreate = function() {
+        this.errorPanel.SetText("failed to create game")
+    };
     this.endTurn = function(){
        var letters = this.board.GetLiveLetters();
        var oldLetters = this.board.GetOldLetters();
@@ -350,7 +391,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
 
     this.onPlayerJoined = function(name){
         //Handler when player joins.
-        //Also called by pplayer who creates game
+        //Also called by player who creates game
         this.state.Players.push(name);
         this.sendUpdateGameMessage()
     }

@@ -34,6 +34,23 @@ function preload() {
     //Load input plugin https://github.com/azerion/phaser-input
     game.add.plugin(PhaserInput.Plugin);
     loadImages();
+
+    //var socket = io.connect('http://' + document.domain + ':' + location.port>
+    /*
+    var socket = io();
+    socket.on('my response', function(msg) {
+        console.log('Received: ' + msg.data);
+    });
+    socket.on('connect', function(msg) {
+        console.log("CONNECTED");
+        socket.emit('my event', {data: "hello"});
+    });
+    socket.on('disconnect', function(msg) {
+        console.log("DISCONNECTED");
+    });
+    */
+    
+    
 }
 function loadImages(){
     
