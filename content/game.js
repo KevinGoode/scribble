@@ -229,7 +229,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         if (response.Yes){
             this.gameName = gameName;
             this.playerName=playerName;
-            this.getGamesThenCreate(gameName);
+            this.createGame(gameName);
         }
     }
     this.StartGame = function() {
@@ -257,7 +257,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         if (response.Yes){
             this.gameName = gameName;
             this.playerName=playerName;
-            alert("JoinGame - todo");
+            this.joinGame();
         }
     }
     this.Submit = function (){
@@ -299,25 +299,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        
         return OK_RESPONSE;
     }
-    this.getGamesThenCreate = function(gameName){
-        var that = this;
-        $.ajax({
-            url: "rest/scribble",
-            type: 'GET',
-            contentType: 'application/json; charset=utf-8',
-            success: function(data, ok, response){that.getGamesCreateIfOk(gameName, data);},
-            error: function(error){that.getGamesNotOk();}});
-    }
-    this.getGamesCreateIfOk = function(gameName, data){
-        if (data.includes(gameName)) {
-            this.errorPanel.SetText("Game already exists with this name. Use a different name.")
-        }else {
-            this.createGame(gameName);
-        }
-    };
-    this.getGamesNotOk = function() {
-        this.errorPanel.SetText("Error validating game name")
-    };
+
     this.createGame = function(gameName){
         var that = this;
         $.ajax({
@@ -333,21 +315,41 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         this.state = new GameState()
         this.state.GameOwner = 0;
         this.state.Name = this.gameName;
-        var id = data['id']
+        var id = data['id'];
         console.log("Got game id: " + id)
+        this.initSocket(id);
+        this.addPlayer(this.playerName);
+    };
+    this.gameFailedToCreate = function() {
+        this.errorPanel.SetText("Failed to create game. Try another name, or try again later.")
+    };
+    this.initSocket = function(id){
         //Init socket
         var that = this;
         this.socket = io.connect('http://' + document.domain + ':' + location.port + '/scribble/' + id);
         this.socket.on('game message', function(msg) { that.receiveMessage(msg)});
         this.socket.on('connect', function(msg) { that.errorPanel.SetText("Successfuly connected to game server")});
         this.socket.on('disconnect', function(msg) { that.errorPanel.SetText("Disconnected from game server")});
-
+     }
+    this.joinGame = function(){
+        var that = this;
+        $.ajax({
+            url: "rest/scribble/" + this.gameName,
+            type: 'PATCH',
+            data: '{"name":"' +  this.playerName + '"}',
+            contentType: 'application/json',
+            success: function(data, ok, response){that.gameSuccessfullyJoined(JSON.parse(data));},
+            error: function(error){that.gameFailedToJoin();}});
+    }
+    this.gameSuccessfullyJoined = function(data) {
+        this.gameCreated = true;
+        var id = data['id']
+        console.log("Got game id: " + id)
+        this.initSocket(id);
         this.addPlayer(this.playerName);
-        //TODO send request to server
-        //alert("CreateGame - more todo");
     };
-    this.gameFailedToCreate = function() {
-        this.errorPanel.SetText("failed to create game")
+    this.gameFailedToJoin = function() {
+        this.errorPanel.SetText("Failed to join game. Perhaps game name wrong, or too many players.")
     };
     this.endTurn = function(){
        var letters = this.board.GetLiveLetters();
@@ -495,6 +497,7 @@ function GameState (state) {
     // Storage class that is passed to all players at end of turn
     this.Players = [] ;//Ordered array of players in game
     this.Name = "" ;// Game name
+    this.id = "";
     this.Started = false
     this.GameOwner = 0; //Index into players array of player that owns game
     this.CurrentPlayer = 0; //Index into players array of current player
@@ -505,6 +508,7 @@ function GameState (state) {
     if (state) {
         this.Players = state.Players
         this.Name = state.Name
+        this.id = state.id
         this.Started = state.Started 
         if (state.GameOwner) this.GameOwner = state.GameOwner;
         if (state.CurrentPlayer) this.CurrentPlayer = state.CurrentPlayer;
