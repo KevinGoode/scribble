@@ -325,20 +325,24 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             type: 'POST',
             data: '{"name":"' +  gameName + '"}',
             contentType: 'application/json',
-            success: function(data, ok, response){that.gameSuccessfullyCreated();},
+            success: function(data, ok, response){that.gameSuccessfullyCreated(JSON.parse(data));},
             error: function(error){that.gameFailedToCreate();}});
     }
-    this.gameSuccessfullyCreated = function() {
+    this.gameSuccessfullyCreated = function(data) {
         this.gameCreated = true;
         this.state = new GameState()
         this.state.GameOwner = 0;
+        this.state.Name = this.gameName;
+        var id = data['id']
+        console.log("Got game id: " + id)
         //Init socket
-        this.socket = io.connect('http://' + document.domain + ':' + location.port + '/scribble/' + this.gameName);
-        this.socket.on('game message', function(msg) { this.receiveMessage(msg)});
-        this.socket.on('connect', function(msg) { this.errorPanel.SetText("Successfuly connected to game server")});
-        this.socket.on('disconnect', function(msg) { this.errorPanel.SetText("Disconnected from game server")});
+        var that = this;
+        this.socket = io.connect('http://' + document.domain + ':' + location.port + '/scribble/' + id);
+        this.socket.on('game message', function(msg) { that.receiveMessage(msg)});
+        this.socket.on('connect', function(msg) { that.errorPanel.SetText("Successfuly connected to game server")});
+        this.socket.on('disconnect', function(msg) { that.errorPanel.SetText("Disconnected from game server")});
 
-        this.onPlayerJoined(this.playerName);
+        this.addPlayer(this.playerName);
         //TODO send request to server
         //alert("CreateGame - more todo");
     };
@@ -366,7 +370,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        var trayState = this.tray.GetTrayState(me);
        trayState.SetScore(newTurnState.GetPlayerScore(me) + newPoints);
        //TODO nextPlayer =0
-       var nextPlayer =0;
+       var nextPlayer = 0;
        var turn = new Turn('word', lettersIn, lettersOut, me, nextPlayer)
        newTurnState.SetTrayState(trayState)
        newTurnState.SetTurn(turn);
@@ -389,11 +393,13 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         this.state = state;
     }
 
-    this.onPlayerJoined = function(name){
-        //Handler when player joins.
-        //Also called by player who creates game
-        this.state.Players.push(name);
-        this.sendUpdateGameMessage()
+    this.addPlayer = function(name){
+        //this.state.Players.push(name);
+        //playerAdd is the only event type handled by the server only.
+        //When this event is received, the server sendsz stateUpdated message. Normally it is
+        //either game owner (on game start) or current player (on turn end) who sends stateUpdated
+        this.socket.emit('game_event', {type: 'playerAdd', body: {'name': name}});
+        //this.sendUpdateGameMessage()
     }
     this.getStateText =function (){
        if (this.gameStarted) return "Started";
@@ -417,28 +423,25 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             this.errorPanel.SetText("Received message with no sender")
             return
         }
-        if (!this.state.IsPlayer(message.sender)){
-             this.errorPanel.SetText("Received message from unknown player: " + message.sender)
-            return
-        }
+        body = message.body;
         switch (message.type){
             case "stateUpdate":
-                this.receiveUpdateGameMessage(message.body);
+                this.receiveUpdateGameMessage(new GameState(body));
                 return;
             case "chat":
-                this.messagePanel.SetText(message.sender + ": " + mesage.body + "\n");
+                this.messagePanel.SetText(message.sender + ": " + body + "\n");
                 return;
             case "preview":
                     //TODO
                     return;
             case "like":
-                this.receivedLikeMessage(message.sender, message.body);
+                this.receivedLikeMessage(message.sender, body);
                 txt = "Likes"
-                if (mesage.body == false)  txt = "Dosn't like"
+                if (body == false)  txt = "Dosn't like"
                 this.messagePanel.SetText(message.sender + ": " + txt+ "\n");
                 if (this.CanIGo()){
                     //Like only gets added if in state 'waiting'
-                    this.activePlayerState.AddLike(message.sender, message.body)
+                    this.activePlayerState.AddLike(message.sender, body)
                 }
                 return;
             default:
@@ -488,15 +491,25 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
 //as an orthogonal check to make sure the state after each turn is applied is consistent with that previously calculated.
 
 
-function GameState () {
+function GameState (state) {
     // Storage class that is passed to all players at end of turn
     this.Players = [] ;//Ordered array of players in game
+    this.Name = "" ;// Game name
+    this.Started = false
     this.GameOwner = 0; //Index into players array of player that owns game
     this.CurrentPlayer = 0; //Index into players array of current player
     // History is array of TurnStates keeping a detailed history of each turn.
     // Note first TurnState is only interesting in terms of initial bag state and each
     //player's tray state
     this.History = [];
+    if (state) {
+        this.Players = state.Players
+        this.Name = state.Name
+        this.Started = state.Started 
+        if (state.GameOwner) this.GameOwner = state.GameOwner;
+        if (state.CurrentPlayer) this.CurrentPlayer = state.CurrentPlayer;
+        if (state.History )  this.History = state.History ;
+    }
 
     this.GetPlayers = function(){
         return this.Players;

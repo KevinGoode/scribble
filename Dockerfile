@@ -1,7 +1,7 @@
 # Base image for raspbian_docker_base
 # docker build  -t scribble:latest .
-# docker container run -it -d scribble:latest bash
-#docker run  -p 80:80 -p 443:443 scribble:latest
+# docker run -p 80:80 -d scribble:latest
+# docker run -p 80:80 -v /home/user/Dev/scribble/content:/etc/nginx/html -d scribble:latest
 # docker container exec -it <container-id> /bin/sh
 #FROM yobasystems/alpine-nginx
 FROM jfloff/alpine-python:3.7
@@ -18,7 +18,7 @@ RUN mkdir /scribble/games
 RUN chmod a+rwx /scribble/games
 ADD server /scribble
 RUN chmod a+x /scribble/start.sh
-ADD content /etc/nginx/html
+#ADD content /etc/nginx/html
 ADD config/nginx.conf /etc/nginx/nginx.conf
 RUN  mkdir -p /etc/nginx/conf.d
 RUN chmod a+r  /etc/nginx/conf.d
