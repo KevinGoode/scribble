@@ -182,13 +182,16 @@ function Tray (game, onDragFunc, onDropFunc) {
     }
 }
 //A TrayState is a storage class for player current state. IE score, player name and letters in tray
-function TrayState(player) {
+function TrayState(player, letters, score) {
     // Storage class for a turnState.
     // Used by tray display and also instantiated by game
     //at end of each turn to keep history
     this.player = player; //Player name/identifier
     this.letters = []; //Array of tiles
     this.score = 0; //Player score number
+    //Second 2 args are only passed on reconstruction on receiving a json state update event
+    if (letters) this.letters = letters;
+    if (score) this.score = score
     this.Clone = function() {
         var trayState = new TrayState(this.player);
         trayState.letters = this.cloneLetters();

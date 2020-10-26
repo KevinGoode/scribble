@@ -2,7 +2,7 @@
 //If 'skip' then lettersIn and lettersOut are not used
 //If 'change' then lettersIn are those from bag and lettersOut are those returned
 //If 'word' then lettersIn are those from bag and lettersOut are those placed on board
-function Turn (type, lettersIn, lettersOut, turnNumber, player,nextPlayer) {
+function Turn (type, lettersIn, lettersOut, turnNumber, player, nextPlayer) {
     // Storage class for a turn. Used by game 
     this.Type = type; //  'skip', 'change', 'word'
     this.LettersIn = lettersIn; //array of tiles

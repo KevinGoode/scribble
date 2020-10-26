@@ -1,4 +1,4 @@
-function Bag (noInit) {
+function Bag (noInit, letters) {
     //Gets a clone
     this.Clone =function (){
         //Clone letters
@@ -95,4 +95,5 @@ function Bag (noInit) {
         return letter;
     }
     if(!noInit)this.letters =  this.getInitialBag()
+    if (letters) this.letters = letters;
 }

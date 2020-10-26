@@ -222,7 +222,7 @@ function onEndGame(button){
     
 }
 function onSendmessage(button){
-    messagePanel.SetText(messageBox.text.text);
+    GameEngine.SendMessage(messageBox.text.text);
     messageBox.setText("");
 }
 function onEndTurn(button){

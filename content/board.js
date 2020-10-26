@@ -60,6 +60,20 @@ function GameBoard(game, name) {
         this.DeleteLiveLetters();
         this.LayLetters(letters)
     }
+    this.ShowPreview = function(letters){
+        this.DeleteLiveLetters();
+        this.PreviewLetters(letters)
+    }
+    this.PreviewLetters = function(letters) {
+        //Letters is array of letters. Need to create sprites, place them on board and add to list
+        for (var i=0;i<letters.length;i++){
+         var boardPos = {x: letters[i].x, y:letters[i].y}
+         var pos = this.getLetterPosFromTileSquarePos(letters[i].size, this. boardPosToScreenPos(boardPos));
+         var letterSprite = this.game.add.sprite(pos.x, pos.y, letters[i].name);
+         letterSprite.name = letters[i].name;
+         this.letters.push(letterSprite);
+        }
+     }
     this.LayLetters = function(letters) {
        //Letters is array of letters. Need to create sprites, place them on board and add to list
        for (var i=0;i<letters.length;i++){
@@ -211,12 +225,12 @@ function GameBoard(game, name) {
     }
 }
 //A BoardState copy of board state at end of a turn
-function BoardState() {
+function BoardState(letters) {
     // Storage class for a BoardState.
     // Used by Board but also instantiated by game
     //at end of each turn to keep history
     this.letters = []; //Array of tiles
-
+    if(letters) this.letters = letters;
     //Gets a clone
     this.Clone = function() {
         //Clone letters

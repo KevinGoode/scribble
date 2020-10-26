@@ -183,18 +183,19 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         }
         return OK_RESPONSE
     }
+    this.SendMessage = function (text){
+        this.socket.emit('game_event', {type: 'chat', body: text, sender: this.playerName});
+    }
     this.Like = function (){
         var response = this.CanILike();
         if (response.Yes){
-            sender = new Messenger("like", true, this.state.GetPlayers(), this.state.GetCurrentPlayerIndex(), this.playerName);
-            sender.SendToAll()
+            this.socket.emit('game_event', {type: 'like', body: True, sender: this.playerName});
         }
     }
     this.DontLike = function (){
         var response = this.CanIDontLike();
         if (response.Yes){
-            sender = new Messenger("like", this.state.GetPlayers(), this.state.GetCurrentPlayerIndex(), this.playerName);
-            sender.SendToAll()
+            this.socket.emit('game_event', {type: 'like', body: False, sender: this.playerName});
         }
     }
     this.ChangeLetters = function (){
@@ -263,9 +264,8 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.Submit = function (){
         var response = this.CanISubmit();
         if (response.Yes){
-            sender = new Messenger("preview", this.board.GetLiveLetters(), this.state.GetPlayers(), this.state.GetCurrentPlayerIndex(), this.playerName);
-            sender.SendToNonActive();
             this.activePlayerState.Submit();
+            this.socket.emit('game_event', {type: 'preview', body: this.board.GetLiveLetters(), sender: this.playerName});
         }
     }
     this.checkValidTurn = function(){
@@ -371,8 +371,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        this.tray.AddLetters(lettersIn);
        var trayState = this.tray.GetTrayState(me);
        trayState.SetScore(newTurnState.GetPlayerScore(me) + newPoints);
-       //TODO nextPlayer =0
-       var nextPlayer = 0;
+       var nextPlayer = this.state.GetNextPlayer()
        var turn = new Turn('word', lettersIn, lettersOut, me, nextPlayer)
        newTurnState.SetTrayState(trayState)
        newTurnState.SetTurn(turn);
@@ -396,12 +395,10 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     }
 
     this.addPlayer = function(name){
-        //this.state.Players.push(name);
-        //playerAdd is the only event type handled by the server only.
-        //When this event is received, the server sendsz stateUpdated message. Normally it is
+        //When this event is received, the server sends stateUpdated message. Normally it is
         //either game owner (on game start) or current player (on turn end) who sends stateUpdated
         this.socket.emit('game_event', {type: 'playerAdd', body: {'name': name}});
-        //this.sendUpdateGameMessage()
+        
     }
     this.getStateText =function (){
        if (this.gameStarted) return "Started";
@@ -434,13 +431,14 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
                 this.messagePanel.SetText(message.sender + ": " + body + "\n");
                 return;
             case "preview":
-                    //TODO
-                    return;
+                this.messagePanel.SetText(message.sender + " placed a word. Press 'Like' or 'Don't Like'\n");
+                this.board.ShowPreview(body);
+                return;
             case "like":
                 this.receivedLikeMessage(message.sender, body);
                 txt = "Likes"
                 if (body == false)  txt = "Dosn't like"
-                this.messagePanel.SetText(message.sender + ": " + txt+ "\n");
+                this.messagePanel.SetText(message.sender + ": " + txt + "\n");
                 if (this.CanIGo()){
                     //Like only gets added if in state 'waiting'
                     this.activePlayerState.AddLike(message.sender, body)
@@ -478,8 +476,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         this.updateGameStateHandler(text, this.state);
     }
     this.sendUpdateGameMessage = function(){
-        //TODO replace line below with rpc call to all players
-        this.receiveUpdateGameMessage(this.state);
+        this.socket.emit('game_event', {type: 'stateUpdate', body: this.state, sender: this.playerName});
     }
 }
 //The GameState is calculated by the active player and shared with all other players at the end of each turn.
@@ -512,9 +509,32 @@ function GameState (state) {
         this.Started = state.Started 
         if (state.GameOwner) this.GameOwner = state.GameOwner;
         if (state.CurrentPlayer) this.CurrentPlayer = state.CurrentPlayer;
-        if (state.History )  this.History = state.History ;
+        if (state.History ){
+            var history = []
+            for(var i=0;i<state.History.length;i++){
+                var bag = new Bag(true, state.History[i].Bag.letters)
+                var boardState = new BoardState(state.History[i].BoardState.letters)
+                var turn = null;
+                if (state.History[i].Turn) {
+                    turn = new Turn(state.History[i].Turn.Type, state.History[i].Turn.LettersIn, state.History[i].Turn.LettersOut, 
+                                    state.History[i].Turn.TurnNumber, state.History[i].Turn.Player, state.History[i].Turn.NextPlayer)
+                }
+                var trayStates = [];
+                for(var j=0;j<state.History[i].TrayStates.length;j++){ 
+                    trayStates.push( new TrayState(state.History[i].TrayStates[j].player, state.History[i].TrayStates[j].letters, state.History[i].TrayStates[j].score));
+                }
+                history.push( new TurnState(bag, boardState, trayStates, "", turn))
+            }
+            this.History = history ;
+        }
     }
-
+    this.GetNextPlayer = function() {
+        var next = this.CurrentPlayer +1;
+        if (next >= this.Players.length){
+            next =0;
+        }
+        return next;
+    }
     this.GetPlayers = function(){
         return this.Players;
     }
