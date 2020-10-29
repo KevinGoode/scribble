@@ -14,8 +14,6 @@ var OK_RESPONSE = new QuestionResponse(true,"");
 
 function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messagePanel){
     this.updateGameStateHandler = updateGameStateHandler
-    this.gameStarted = false;
-    this.gameCreated = false ;//Can be also used to indicate whether joined game
     this.gameName = "";
     this.playerName = "";
     this.board = board;
@@ -36,7 +34,12 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         return this.playerName;
     }
     this.HasGameStarted = function() {
-        return this.gameStarted
+        if (this.state) return this.state.Started;
+        return false;
+    }
+    this.HaveJoinedGame = function() {
+        if (this.state) return true;
+        return false;
     }
     this.CanIGo = function(){
         //Simple but useful function. Returns true if it is local players turn to go
@@ -44,24 +47,24 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             
     }
     this.CanIStartGame =function(){
-        if (! this.gameCreated){
+        if (! this.HaveJoinedGame()){
             var msg = "Cannot start game. You need to create a new game or join an existing one.";
             return new QuestionResponse(false, msg);
         } else if (! this.amIGameOwner()){
             var msg = "Only the player who created the game can start it."
             return new QuestionResponse(false, msg)
-        } else if (this.gameStarted){
+        } else if (this.HasGameStarted()){
             var msg = "Cannot start game. Game has already been started"
             return new QuestionResponse(false, msg)
         }
         return OK_RESPONSE
     }
     this.CanICreateNewGame = function(gameName, playerName){
-        if (this.gameCreated){
-            var msg = "Cannot create a new game. A game has already been created.";
+        if (this.HaveJoinedGame()){
+            var msg = "Cannot create a new game. You are already playing a game.";
             return new QuestionResponse(false, msg);
         } else if (this.HasGameStarted()){
-            var msg = "Cannot create a new game game. A game has already been created. Press 'EndGame' if you really want to end this game."
+            var msg = "Cannot create a new game game. You are already playing a game. Press 'EndGame' if you really want to end this game."
             return new QuestionResponse(false, msg)
         }else if ( gameName == ""){
             var msg = "Cannot create game. Game name has not been set."
@@ -73,8 +76,8 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         return OK_RESPONSE
     }
     this.CanIEndGame = function(){
-        if (! this.gameCreated){
-            var msg = "Cannot end game. You need to create a new game before you can end it.";
+        if (! this.HaveJoinedGame()){
+            var msg = "Cannot end game. You are currently not playing a game";
             return new QuestionResponse(false, msg);
         } else if (! this.amIGameOwner()){
             var msg = "Only the player who created the game can end it."
@@ -89,7 +92,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         }else if (playerName == ""){
             var msg = "Cannot join game. Player name has not been set."
             return new QuestionResponse(false, msg)
-        }else if (this.gameCreated){
+        }else if (this.HaveJoinedGame()){
             var msg = "Cannot join game. You are already playing a game.";
             //TODO might want to consider rejoining in case coms with server go down?
             return new QuestionResponse(false, msg);
@@ -189,13 +192,13 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.Like = function (){
         var response = this.CanILike();
         if (response.Yes){
-            this.socket.emit('game_event', {type: 'like', body: True, sender: this.playerName});
+            this.socket.emit('game_event', {type: 'like', body: true, sender: this.playerName});
         }
     }
     this.DontLike = function (){
         var response = this.CanIDontLike();
         if (response.Yes){
-            this.socket.emit('game_event', {type: 'like', body: False, sender: this.playerName});
+            this.socket.emit('game_event', {type: 'like', body: false, sender: this.playerName});
         }
     }
     this.ChangeLetters = function (){
@@ -217,8 +220,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         if (response.Yes){
             //TODO update state , send message to server to reinit all  players to reset
             alert("EndGame - todo");
-            this.gameCreated = false;
-            this.gameStarted = false;
+
             this.gameName = "";
             this.playerName = "";
             this.state =null;
@@ -237,13 +239,11 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         var response = this.CanIStartGame();
         if (response.Yes){
             
-            //alert("StartGame - todo");
-            //TODO add letters to trays for each player, determine who starts then send instructions to all
-            this.gameStarted = true;
+            this.state.Started = true;
             var initialTurnState = this.getInitialTurnState();
             this.state.AddTurnState(initialTurnState);
             //The first tray in first turn is first player
-            this.state.SetCurrentPlayer(initialTurnState.GetTrayState(0).GetPlayer());
+            this.state.SetCurrentPlayerByName(initialTurnState.GetTrayState(0).GetPlayer());
             this.sendUpdateGameMessage();
         }
     }
@@ -311,7 +311,6 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             error: function(error){that.gameFailedToCreate();}});
     }
     this.gameSuccessfullyCreated = function(data) {
-        this.gameCreated = true;
         this.state = new GameState()
         this.state.GameOwner = 0;
         this.state.Name = this.gameName;
@@ -342,7 +341,6 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             error: function(error){that.gameFailedToJoin();}});
     }
     this.gameSuccessfullyJoined = function(data) {
-        this.gameCreated = true;
         var id = data['id']
         console.log("Got game id: " + id)
         this.initSocket(id);
@@ -371,7 +369,9 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        this.tray.AddLetters(lettersIn);
        var trayState = this.tray.GetTrayState(me);
        trayState.SetScore(newTurnState.GetPlayerScore(me) + newPoints);
-       var nextPlayer = this.state.GetNextPlayer()
+       var nextPlayer = this.state.GetNextPlayer();
+       this.state.SetCurrentPlayer(nextPlayer);
+       console.log("Next player is " + nextPlayer.toString());
        var turn = new Turn('word', lettersIn, lettersOut, me, nextPlayer)
        newTurnState.SetTrayState(trayState)
        newTurnState.SetTurn(turn);
@@ -401,14 +401,14 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         
     }
     this.getStateText =function (){
-       if (this.gameStarted) return "Started";
-       if (this.gameCreated) return "Created";
+       if (this.HaveJoinedGame()) return "Joined";
        return "";
     }
     this.getInitialTurnState = function(){
         var bag = new Bag();
         var boardState = new BoardState();
         var trays = bag.GetInitialTrays(this.state.Players);
+        this.logTrayStates(trays);
         var turnState = new TurnState(bag, boardState, trays, "", null);
         return turnState;
     }
@@ -435,12 +435,11 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
                 this.board.ShowPreview(body);
                 return;
             case "like":
-                this.receivedLikeMessage(message.sender, body);
                 txt = "Likes"
                 if (body == false)  txt = "Dosn't like"
                 this.messagePanel.SetText(message.sender + ": " + txt + "\n");
                 if (this.CanIGo()){
-                    //Like only gets added if in state 'waiting'
+                    //Like only gets added if local player is active
                     this.activePlayerState.AddLike(message.sender, body)
                 }
                 return;
@@ -451,6 +450,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.receiveUpdateGameMessage = function(state){
         //This is callback that receives a game update
         this.state = state;
+        this.logState();
         var text = "";
         if (this.state) {
             text += "State:" + this.getStateText() + "\n";
@@ -470,13 +470,34 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             }
             if (this.CanIGo()){
                 //It is my turn so set my active state
-                this.activePlayerState = new ActivePlayerState(this.state.GetNumberOfPlayers());          }
+                this.activePlayerState = new ActivePlayerState(this.state.GetNumberOfPlayers());
+            }
 
         }
         this.updateGameStateHandler(text, this.state);
     }
     this.sendUpdateGameMessage = function(){
         this.socket.emit('game_event', {type: 'stateUpdate', body: this.state, sender: this.playerName});
+    }
+    this.logState = function(){
+        if (this.state) {
+            console.log("************")
+            console.log("Started: " + this.state.Started.toString());
+            for (var i=0;i<this.state.Players.length;i++){
+                console.log("Player:" + this.state.Players[i]);
+            }
+            console.log("Current player:" + this.state.Players[this.state.CurrentPlayer]);
+            console.log("************")
+        }
+    }
+    this.logTrayStates = function (trayStates){
+        for (var i=0;i<trayStates.length;i++){
+            var line = "";
+            for (var j=0;j<trayStates[i].letters.length;j++){
+                line += trayStates[i].letters[j].name;
+            }
+            console.log("Tray for player : " + trayStates[i].player + " " + line);
+        }
     }
 }
 //The GameState is calculated by the active player and shared with all other players at the end of each turn.
@@ -573,7 +594,7 @@ function GameState (state) {
         //Actually only gets last proper turn because there is no turn object in first turnState
         var lastTurn = null;
         if (this.History.length >=1 ) {
-            lastTurn =  this.History[this.History.length-1].turn;
+            lastTurn =  this.History[this.History.length-1].Turn;
         }
         return lastTurn;
     }
@@ -613,7 +634,7 @@ function GameState (state) {
     this.GetGameOwner = function(){
         return this.Players[ this.GameOwner];
     }
-    this.SetCurrentPlayer = function(playerName){
+    this.SetCurrentPlayerByName = function(playerName){
         this.CurrentPlayer = 0
         for (var i=0;i<this.Players.length;i++){
             if (this.Players[i] == playerName){
@@ -621,6 +642,9 @@ function GameState (state) {
                 break;
             }
         }
+    }
+    this.SetCurrentPlayer = function(index){
+        this.CurrentPlayer = index; 
     }
     this.GetCurrentPlayer = function(){
         var player = "";

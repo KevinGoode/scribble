@@ -10,14 +10,7 @@ function ActivePlayerState(numberOfPlayers){
     this.numPlayers = numberOfPlayers
     this.AddLike = function(playerName, like){
         if (this.GetState() != this.ACTIVE_STATE){
-            for (var i=0;i<this.likes.length;i++){
-                if (this.likes[i].name = playerName){
-                    this.likes[i].like = like; //like is true or false
-                    return
-                }
-            }
-            //Like dosn't exist so add
-            this.likes.append({name: playerName, like: like});
+            this.addLike(playerName,like)
             if (this.amIApproved()){
                 this.state = this.APPROVED_STATE;
             }else{
@@ -51,11 +44,21 @@ function ActivePlayerState(numberOfPlayers){
        var count =0;
        if  ((this.likes.length + 1) <  this.numPlayers) return false;
        for (var i=0;i<this.likes.length;i++){
-           if (likes[i].like){
+           if (this.likes[i].like){
                count++;
            }
        }
        //Since active player cannot like then need likes of all other players
        return ((count + 1) >= this.numPlayers);
+    }
+    this.addLike = function(playerName, like){
+        for (var i=0;i<this.likes.length;i++){
+            if (this.likes[i].name = playerName){
+                this.likes[i].like = like; //like is true or false
+                return
+            }
+        }
+        //Like dosn't exist so add
+        this.likes.push({name: playerName, like: like});
     }
 }

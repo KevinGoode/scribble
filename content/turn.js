@@ -9,7 +9,7 @@ function Turn (type, lettersIn, lettersOut, turnNumber, player, nextPlayer) {
     this.LettersOut = lettersOut; //array of tiles
     this.TurnNumber = turnNumber; //number
     this.Player = player ; //string containing player name
-    this.NextPlayer = nextPlayer ; //string containing player name
+    this.NextPlayer = nextPlayer ; //int containing index of next player
     this.DidAddWord = function (){
         if (this.Type == 'word') return true;
         return false
