@@ -56,6 +56,18 @@ function InfoPanel (game,  x, y, width, height, font, textColour, defaultText, d
             this.logCurrentLetters();
         }
     }
+ 
+    this.DeleteLiveLetters = function(){
+        this.deleteLetters(this.letters)
+        this.letters = [] ;
+    }
+
+    this.deleteLetters = function (sprites){
+        for (var i=0;i<sprites.length;i++){
+            sprites[i].destroy(true);
+        }
+    }
+
     this.isLetterOnPanel= function(letterSprite){
         for (var i=0;i<this.letters.length;i++){
             if (letterSprite == this.letters[i]) return true;

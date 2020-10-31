@@ -205,8 +205,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.ChangeLetters = function (){
         var response = this.CanIChangeLetters();
         if (response.Yes){
-            //TODO update state , send message to server to update all other players
-            alert("ChangeLetters - todo");
+            this.changeLetters();
         }
     }
     this.EndTurn = function (){
@@ -350,17 +349,32 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.gameFailedToJoin = function() {
         this.errorPanel.SetText("Failed to join game. Perhaps game name wrong, or too many players.")
     };
+    this.changeLetters = function(){
+        var lettersOut = this.dropBox.GetLiveLetters();
+        var newTurnState = this.getNewTurnState(0, "change", lettersOut);
+        newTurnState.ReturnLetters(lettersOut);
+        this.dropBox.DeleteLiveLetters();
+        this.state.AddTurnState(newTurnState);
+        //Update everybody's state
+        this.sendUpdateGameMessage();
+    }
     this.endTurn = function(){
-       var letters = this.board.GetLiveLetters();
-       var oldLetters = this.board.GetOldLetters();
-       var checker = new WordChecker(letters, oldLetters);
-       var newPoints =checker.GetScore();
-       var me = this.GetMyPlayerName();
-       //1.) Create a new turn state
-       //Take a copy of last turn then start updating it
-       
-       var newTurnState = this.state.CloneLastTurnState();
        var lettersOut = this.board.GetLiveLetters();
+       var oldLetters = this.board.GetOldLetters();
+       var checker = new WordChecker(lettersOut, oldLetters);
+       var newPoints =checker.GetScore();
+       newTurnState = this.getNewTurnState(newPoints, "word", lettersOut);
+       newTurnState.UpdateBoardState(lettersOut);
+       this.board.EndTurn(); //This deletes live letters and moves then to old
+       this.state.AddTurnState(newTurnState);
+       //Update everybody's state
+       this.sendUpdateGameMessage();
+    }
+    this.getNewTurnState = function(newPoints, type, lettersOut){
+       var me = this.GetMyPlayerName();
+       //Create a new turn state
+       //Take a copy of last turn then start updating it
+       var newTurnState = this.state.CloneLastTurnState();
        var count = this.tray.GetNumberOfLetters();
        var lettersIn = [];
        for (var i=0;i<7-count;i++){
@@ -376,18 +390,10 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        
        //Increment local turnnumber
        this.incrementTurnNumber()
-       var turn = new Turn('word', lettersIn, lettersOut, this.turnNumber, me, nextPlayer)
+       var turn = new Turn(type, lettersIn, lettersOut, this.turnNumber, me, nextPlayer)
        newTurnState.SetTrayState(trayState)
        newTurnState.SetTurn(turn);
-       newTurnState.UpdateBoardState(lettersOut);
-       //2.) UpdateBoard so live letters are added to old
-       this.board.EndTurn();
-
-       //3.) Update state
-       this.state.AddTurnState(newTurnState);
-       
-       //4.) Update everybody's state
-       this.sendUpdateGameMessage();
+       return newTurnState
     }
     this.incrementTurnNumber = function(){
         this.turnNumber = this.turnNumber+1;

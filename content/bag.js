@@ -82,6 +82,13 @@ function Bag (noInit, letters) {
         var letter = this.letters.pop();
         return letter;
     }
+    this.ReturnLetters = function(letters){
+        for (var i=0;i<letters.length;i++){
+           this.letters.push(letters[i]);
+        }
+        //Now mix bag
+        this.letters = this.shuffle(this.letters);
+    }
     this.GetTrayLetter = function(x){
         var letter = this.letters.pop();
         letter.positionType="tray";

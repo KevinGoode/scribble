@@ -35,6 +35,9 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
         //Called at end of turn on clone of last turnstate
         return this.Bag.GetLetter();
     }
+    this.ReturnLetters = function(letters){
+        this.Bag.ReturnLetters(letters);
+    }
     this.SetTurn = function (turn){
         //Called at end of turn on clone of last turnstate
         this.Turn = turn;
