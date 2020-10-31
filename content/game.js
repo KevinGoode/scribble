@@ -181,7 +181,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             var msg = "Cannot undo. There is nothing to undo. Nobody has had a turn yet."
             return new QuestionResponse(false, msg);
         }
-        else if (!state.History[state.History.length-1].DidAddWord()) {
+        else if (!this.state.History[state.History.length-1].DidAddWord()) {
             var msg = "Cannot undo. Last turn did not not involve adding a word"
             return new QuestionResponse(false, msg);
         }
@@ -436,7 +436,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
                 this.receiveUpdateGameMessage(new GameState(body));
                 return;
             case "chat":
-                this.messagePanel.SetText(message.sender + ": " + body + "\n");
+                this.messagePanel.UpdateText(body);
                 return;
             case "preview":
                 this.messagePanel.SetText(message.sender + " placed a word. Press 'Like' or 'Don't Like'\n");

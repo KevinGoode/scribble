@@ -9,6 +9,7 @@ function InfoPanel (game,  x, y, width, height, font, textColour, defaultText, d
     this.x = x;
     this.y = y;
     this.defaultText = defaultText;
+    this.messageContent = "";
     this.letters = [];
     var graphics = game.add.graphics(x,y);
 
@@ -69,16 +70,28 @@ function InfoPanel (game,  x, y, width, height, font, textColour, defaultText, d
         console.log(text);
     }
     this.SetText = function(text){
+        //Call this to set text if don't know if text too big
         this.message.text = this.defaultText + text;
         while(this.message.height > height){
-            text = removeWordsFromStart(text, 2)
+            text = removeWordsFromStart(text, 1)
             this.message.text = this.defaultText + text;
         }
-        //Return input text that may have been shortened
-        return text;
+        //Return full text that may have been shortened
+        this.messageContent = text
+        return this.messageContent;
+    }
+    this.GetText = function(){
+        return this.messageContent;
+    }
+    this.UpdateText = function(text){
+          //Call this to set text if DO know text size is ok
+          //Only use this function when updating other players panels having 
+          //already called SetText on local player
+        this.messageContent = text
+        this.message.text = this.defaultText + text;
     }
     function removeWordsFromStart(text, numberWords){
-        var shorter = text.split(' ').slice(numberWords).join(' ');
+        var shorter = text.split('\n').slice(numberWords).join('\n');
         return  shorter
 
     }
