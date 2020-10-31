@@ -328,18 +328,6 @@ function updateGameDisplay(infoText, state){
     //Update score text
     scorePanel.SetText(infoText);
 
-    //Now update board view
-    var lastTurn = state.GetLastTurn()
-    if (lastTurn){
-        //There was a last turn
-    }else{
-        //No last turn, so show my initial tray if game has started
-        //Otherwise do nothing
-
-        var myTray = state.GetMyTrayState(me)
-        if (myTray){
-            Tray.AddLetters(myTray.GetLetters());
-        }
-    }
+   
 }
  

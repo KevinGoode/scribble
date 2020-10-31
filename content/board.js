@@ -64,25 +64,17 @@ function GameBoard(game, name) {
         this.DeleteLiveLetters();
         this.PreviewLetters(letters)
     }
-    this.PreviewLetters = function(letters) {
-        //Letters is array of letters. Need to create sprites, place them on board and add to list
-        for (var i=0;i<letters.length;i++){
-         var boardPos = {x: letters[i].x, y:letters[i].y}
-         var pos = this.getLetterPosFromTileSquarePos(letters[i].size, this. boardPosToScreenPos(boardPos));
-         var letterSprite = this.game.add.sprite(pos.x, pos.y, letters[i].name);
-         letterSprite.name = letters[i].name;
-         this.letters.push(letterSprite);
+    this.UpdateFromLastTurn = function(lastTurn){
+        if (lastTurn.DidAddWord()){
+            this.DeleteLiveLetters();
+            this.addLettersToBoard(lastTurn.LettersOut, this.oldLetters);
         }
+    }
+    this.PreviewLetters = function(letters) {
+        this.addLettersToBoard(letters, this.letters);
      }
     this.LayLetters = function(letters) {
-       //Letters is array of letters. Need to create sprites, place them on board and add to list
-       for (var i=0;i<letters.length;i++){
-        var boardPos = {x: letters[i].x, y:letters[i].y}
-        var pos = this.getLetterPosFromTileSquarePos(letters[i].size, this. boardPosToScreenPos(boardPos));
-        var letterSprite = this.game.add.sprite(pos.x, pos.y, letters[i].name);
-        letterSprite.name = letters[i].name;
-        this.oldLetters.push(letterSprite);
-       }
+        this.addLettersToBoard(letters, this.oldLetters);
     }
     this.DeleteLiveLetters = function(){
         this.deleteLetters(this.letters)
@@ -98,6 +90,17 @@ function GameBoard(game, name) {
         for (var i=0;i<sprites.length;i++){
             sprites[i].destroy(true);
         }
+    }
+    this.addLettersToBoard = function(letters, letterList){
+        //Letters is array of letters. Need to create sprites, place them on board and add to letterList.
+        //letterList is either this.letters or this.oldLetters
+       for (var i=0;i<letters.length;i++){
+        var boardPos = {x: letters[i].x, y:letters[i].y}
+        var pos = this.getLetterPosFromTileSquarePos(letters[i].size, this. boardPosToScreenPos(boardPos));
+        var letterSprite = this.game.add.sprite(pos.x, pos.y, letters[i].name);
+        letterSprite.name = letters[i].name;
+        letterList.push(letterSprite);
+       }
     }
     this.convertSpritesToLetters = function(sprites){
         var letters = [];

@@ -16,6 +16,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.updateGameStateHandler = updateGameStateHandler
     this.gameName = "";
     this.playerName = "";
+    this.turnNumber = 0;
     this.board = board;
     this.dropBox = dropBox;
     this.errorPanel = errorPanel
@@ -372,7 +373,10 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        var nextPlayer = this.state.GetNextPlayer();
        this.state.SetCurrentPlayer(nextPlayer);
        console.log("Next player is " + nextPlayer.toString());
-       var turn = new Turn('word', lettersIn, lettersOut, me, nextPlayer)
+       
+       //Increment local turnnumber
+       this.incrementTurnNumber()
+       var turn = new Turn('word', lettersIn, lettersOut, this.turnNumber, me, nextPlayer)
        newTurnState.SetTrayState(trayState)
        newTurnState.SetTurn(turn);
        newTurnState.UpdateBoardState(lettersOut);
@@ -384,6 +388,10 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        
        //4.) Update everybody's state
        this.sendUpdateGameMessage();
+    }
+    this.incrementTurnNumber = function(){
+        this.turnNumber = this.turnNumber+1;
+        console.log("My turn number is " + this.turnNumber.toString());
     }
     this.amIGameOwner = function() {
         return (this.playerName != "" && this.state && this.state.GetGameOwner() == this.playerName );
@@ -472,9 +480,47 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
                 //It is my turn so set my active state
                 this.activePlayerState = new ActivePlayerState(this.state.GetNumberOfPlayers());
             }
-
+             this.updateBoardAndTray();
         }
         this.updateGameStateHandler(text, this.state);
+    }
+    this.updateBoardAndTray = function(){
+        var lastTurn = this.state.GetLastTurn()
+        if (lastTurn){
+            if (this.turnNumber == lastTurn.TurnNumber){
+                console.log("Got state update. Nothing to do. Must have been my last go!")
+            }else if((this.turnNumber +1) == lastTurn.TurnNumber){
+                //Usual case where non active players get update.
+                //In this case do not need tro update tray so just update board with last letters added.
+                if (lastTurn.DidAddWord()){
+                    console.log("Got state update. Adding new letters to board");
+                    this.board.UpdateFromLastTurn(lastTurn);
+                }else{
+                    console.log("Got state update. Last go was either letter change or skip. Nothing to do");
+                }
+
+            } else if (this.turnNumber < lastTurn.TurnNumber){
+                //Current players has missed more than one state update
+                //Need to reconstruct board with multiple turns and reset current tray
+                alert("TODO - Need to reconstruct board with multiple turns and reset current tray");
+            } else {
+                //Current player is ahead of current state. An Undo must have occurred
+                //Need to reconstruct board and tray to a past state.
+                alert("TODO - Need to reconstruct board and tray to a past state");
+            }
+            //Set display last turn number so know next time what to do
+            this.turnNumber = lastTurn.TurnNumber
+        }else{
+            //No last turn, so show my initial tray if game has started
+            var me = this.GetMyPlayerName();
+            var myTray = this.state.GetMyTrayState(me)
+            if (myTray){
+                console.log("Got state update. Showing initial tray")
+                this.tray.AddLetters(myTray.GetLetters());
+            }else{
+                console.log("Got state update. Game not started. Nothing to display");
+            }
+        }
     }
     this.sendUpdateGameMessage = function(){
         this.socket.emit('game_event', {type: 'stateUpdate', body: this.state, sender: this.playerName});
