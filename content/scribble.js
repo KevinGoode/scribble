@@ -222,12 +222,7 @@ function onEndGame(button){
     
 }
 function onSendmessage(button){
-    var me = GameEngine.GetMyPlayerName();
-    var oldText = messagePanel.GetText();
-    var lineTerminator = "\n";
-    if (oldText == "") lineTerminator = "";
-    var fullDisplayText = messagePanel.SetText(oldText + lineTerminator + me + ":" + messageBox.text.text);
-    GameEngine.SendMessage(fullDisplayText);
+    GameEngine.SendMessage(messageBox.text.text);
     messageBox.setText("");
 }
 function onEndTurn(button){

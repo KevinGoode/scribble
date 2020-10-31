@@ -188,18 +188,22 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         return OK_RESPONSE
     }
     this.SendMessage = function (text){
-        this.socket.emit('game_event', {type: 'chat', body: text, sender: this.playerName});
+        this.sendMessage(text);
     }
     this.Like = function (){
         var response = this.CanILike();
         if (response.Yes){
+            //Emit 2 events : 1 boolean like event and one chat event
             this.socket.emit('game_event', {type: 'like', body: true, sender: this.playerName});
+            this.sendMessage("Likes");
         }
     }
     this.DontLike = function (){
         var response = this.CanIDontLike();
         if (response.Yes){
+            //Emit 2 events : 1 boolean like event and one chat event
             this.socket.emit('game_event', {type: 'like', body: false, sender: this.playerName});
+            this.sendMessage("Doesn't like");
         }
     }
     this.ChangeLetters = function (){
@@ -238,7 +242,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.StartGame = function() {
         var response = this.CanIStartGame();
         if (response.Yes){
-            
+     
             this.state.Started = true;
             var initialTurnState = this.getInitialTurnState();
             this.state.AddTurnState(initialTurnState);
@@ -268,35 +272,45 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             this.socket.emit('game_event', {type: 'preview', body: this.board.GetLiveLetters(), sender: this.playerName});
         }
     }
+    this.sendMessage = function(text) {
+        var me = this.GetMyPlayerName();
+        var oldText = messagePanel.GetText();
+        var lineTerminator = "\n";
+        if (oldText == "") lineTerminator = "";
+        var fullDisplayText = this.messagePanel.SetText(oldText + lineTerminator + me + ":" + text);
+        this.socket.emit('game_event', {type: 'chat', body: fullDisplayText, sender: this.playerName});
+    }
     this.checkValidTurn = function(){
         var letters = this.board.GetLiveLetters();
-        var oldLetters = this.board.GetOldLetters();
-        var checker = new WordChecker(letters, oldLetters);
-        if(!checker.AreLettersStraight()){
-            var msg = "Cannot end turn. Letters are not in a straight line."
-            return new QuestionResponse(false, msg);
-        }
-        if(checker.IsFirstLay()){
-            
-            if(!checker.DoLettersGoThroughMiddleSquare()){
-                var msg = "Cannot end turn. A letter must must be placed on centre square"
-                return new QuestionResponse(false, msg);
-            }else if (!checker.AreLettersContinuous()){
-                var msg = "Cannot end turn. Word must have no gaps."
+        //If no letters laid then we are skipping turn
+        if (letters.length > 0) {
+            var oldLetters = this.board.GetOldLetters();
+            var checker = new WordChecker(letters, oldLetters);
+            if(!checker.AreLettersStraight()){
+                var msg = "Cannot end turn. Letters are not in a straight line."
                 return new QuestionResponse(false, msg);
             }
+            if(checker.IsFirstLay()){
+                
+                if(!checker.DoLettersGoThroughMiddleSquare()){
+                    var msg = "Cannot end turn. A letter must must be placed on centre square"
+                    return new QuestionResponse(false, msg);
+                }else if (!checker.AreLettersContinuous()){
+                    var msg = "Cannot end turn. Word must have no gaps."
+                    return new QuestionResponse(false, msg);
+                }
 
-        }else{
-            //Test whether word intersects or extends an existing word with no gaps
-            if(checker.AreThereGapsInWord()){
-                var msg = "Cannot end turn. There are gaps. Word must have no gaps."
-                return new QuestionResponse(false, msg);
-            }else if (!checker.AreThereAdjacentLetters()){
-                var msg = "Cannot end turn. Word does not intersect an existing word"
-                return new QuestionResponse(false, msg);
+            }else{
+                //Test whether word intersects or extends an existing word with no gaps
+                if(checker.AreThereGapsInWord()){
+                    var msg = "Cannot end turn. There are gaps. Word must have no gaps."
+                    return new QuestionResponse(false, msg);
+                }else if (!checker.AreThereAdjacentLetters()){
+                    var msg = "Cannot end turn. Word does not intersect an existing word"
+                    return new QuestionResponse(false, msg);
+                }
             }
         }
-       
         return OK_RESPONSE;
     }
 
@@ -359,11 +373,18 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         this.sendUpdateGameMessage();
     }
     this.endTurn = function(){
+       var newPoints = 0;
+       var type = "word";
        var lettersOut = this.board.GetLiveLetters();
-       var oldLetters = this.board.GetOldLetters();
-       var checker = new WordChecker(lettersOut, oldLetters);
-       var newPoints =checker.GetScore();
-       newTurnState = this.getNewTurnState(newPoints, "word", lettersOut);
+       if (lettersOut.length > 0) {
+            var oldLetters = this.board.GetOldLetters();
+            var checker = new WordChecker(lettersOut, oldLetters);
+            newPoints = checker.GetScore();
+       }else{
+           type = "skip"
+           console.log("Skipping go")
+       }
+       newTurnState = this.getNewTurnState(newPoints, type, lettersOut);
        newTurnState.UpdateBoardState(lettersOut);
        this.board.EndTurn(); //This deletes live letters and moves then to old
        this.state.AddTurnState(newTurnState);
@@ -445,21 +466,32 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
                 this.messagePanel.UpdateText(body);
                 return;
             case "preview":
-                this.messagePanel.SetText(message.sender + " placed a word. Press 'Like' or 'Don't Like'\n");
-                this.board.ShowPreview(body);
+                this.receivePreviewMessage(message);
                 return;
             case "like":
-                txt = "Likes"
-                if (body == false)  txt = "Dosn't like"
-                this.messagePanel.SetText(message.sender + ": " + txt + "\n");
-                if (this.CanIGo()){
-                    //Like only gets added if local player is active
-                    this.activePlayerState.AddLike(message.sender, body)
-                }
+                this.receiveLikeMessage(message);
                 return;
             default:
                 this.errorPanel.SetText("Received message with unsupported type: " + message.type)
         };
+    }
+    this.receiveLikeMessage = function(message){
+        if (this.CanIGo()){
+            //Like only gets handled if local player is active
+            this.activePlayerState.AddLike(message.sender, message.body);
+        }
+    }
+    this.receivePreviewMessage = function(message){
+        //Only handle this event if not active player
+        if (!this.CanIGo()) {
+        var txt = message.sender + " placed a word. Press 'Like' or 'Don't Like'\n"
+        if (body.length == 0) {
+            //No letters laid so skip turn
+            txt = message.sender + " decided to skip a turn. Press 'Like' or 'Don't Like'\n"
+        }
+        this.errorPanel.SetText(txt);
+        this.board.ShowPreview(message.body);
+       }
     }
     this.receiveUpdateGameMessage = function(state){
         //This is callback that receives a game update

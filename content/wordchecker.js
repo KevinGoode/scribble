@@ -10,19 +10,21 @@ function WordChecker (letters, oldLetters) {
         }
         this.IsWordHorizontal  = function () {
             //Horizontal if y is equal everywhere
-            //There will always be one letter
-            var y = this.letters[0].y;
-            for (var i=1;i<this.letters.length;i++){
-                if(this.letters[i].y != y) return false;
+            if (this.letters.length > 0){
+                var y = this.letters[0].y;
+                for (var i=1;i<this.letters.length;i++){
+                    if(this.letters[i].y != y) return false;
+                }
             }
             return true;
         }
         this.IsWordVertical= function () {
             //Vertical if x is equal everywhere
-            //There will always be one letter
-            var x = this.letters[0].x;
-            for (var i=1;i<this.letters.length;i++){
-                if(this.letters[i].x != x) return false
+            if (this.letters.length > 0){
+                var x = this.letters[0].x;
+                for (var i=1;i<this.letters.length;i++){
+                    if(this.letters[i].x != x) return false
+                }
             }
             return true;
         }
@@ -49,14 +51,16 @@ function WordChecker (letters, oldLetters) {
                 for (var i=0;i<this.letters.length;i++){
                     yPositions.push(this.letters[i].y)
                 }
-                //All x's the same so just get first
-                var x = this.letters[0].x;
-                var sorted = yPositions.sort();
-                for (var i=1;i< sorted.length;i++){
-                    if (sorted[i] != (sorted[i-1] + 1)){
-                        //Found gap in new letters
-                        for (var j=sorted[i-1]+1;j<sorted[i]; j++) {
-                            if (!this.IsOldLetterHere(x, j)) return true
+                if (this.letters.length > 0){
+                    //All x's the same so just get first
+                    var x = this.letters[0].x;
+                    var sorted = yPositions.sort();
+                    for (var i=1;i< sorted.length;i++){
+                        if (sorted[i] != (sorted[i-1] + 1)){
+                            //Found gap in new letters
+                            for (var j=sorted[i-1]+1;j<sorted[i]; j++) {
+                                if (!this.IsOldLetterHere(x, j)) return true
+                            }
                         }
                     }
                 }
@@ -66,14 +70,16 @@ function WordChecker (letters, oldLetters) {
                 for (var i=0;i<this.letters.length;i++){
                     xPositions.push(this.letters[i].x)
                 }
-                //All y's the same so just get first
-                var y = this.letters[0].y;
-                var sorted = xPositions.sort();
-                for (var i=1;i< sorted.length;i++){
-                    if (sorted[i] != (sorted[i-1] + 1)){
-                        //Found gap in new letters
-                        for (var j=sorted[i-1]+1;j<sorted[i]; j++) {
-                            if (!this.IsOldLetterHere(j, y)) return true
+                if (this.letters.length > 0){
+                    //All y's the same so just get first
+                    var y = this.letters[0].y;
+                    var sorted = xPositions.sort();
+                    for (var i=1;i< sorted.length;i++){
+                        if (sorted[i] != (sorted[i-1] + 1)){
+                            //Found gap in new letters
+                            for (var j=sorted[i-1]+1;j<sorted[i]; j++) {
+                                if (!this.IsOldLetterHere(j, y)) return true
+                            }
                         }
                     }
                 }
