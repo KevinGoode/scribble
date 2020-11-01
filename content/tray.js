@@ -27,12 +27,11 @@ function Tray (game, onDragFunc, onDropFunc) {
         trayState = new TrayState(playerName)
         var letters = [];
         for (var i=0;i<this.tray.length;i++){
-            if (this.tray.letterSprite){
-                let letterCopy = Object.assign({}, ALPHABET_DICTIONARY[this.tray.letterSprite.name]);
+            if (this.tray[i].letterSprite){
+                let letterCopy = Object.assign({}, ALPHABET_DICTIONARY[this.tray[i].letterSprite.name]);
                 letterCopy.x = i
                 letterCopy.y = 1;
                 letterCopy.positionType = "tray";
-                letterCopy.owner = "playerName";
                 letters.push(letterCopy);
             }
         }
@@ -97,7 +96,7 @@ function Tray (game, onDragFunc, onDropFunc) {
     this.AddLetters = function(letters){
         for (var i=0;i<letters.length;i++){
             var trayItem = this.getEmptyPosition();
-            var pos = this.getLetterPosFromTileSquarePos(letters[i].size,trayItem.sprite.position);
+            var pos = this.getLetterPosFromTileSquarePos(LETTER_SIZE,trayItem.sprite.position);
             var letterSprite = this.group.create(pos.x, pos.y, letters[i].name)
             //Store name . This is useful when we convert sprites back to state objects later
             letterSprite.name = letters[i].name;

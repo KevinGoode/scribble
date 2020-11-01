@@ -207,7 +207,7 @@ function WordChecker (letters, oldLetters) {
             //word is an ordered array of old and new letters
             for (var i=0;i<word.length;i++){
                 name += word[i].name;
-                var letterScore = word[i].points;
+                var letterScore = POINTS_DICTIONARY[word[i].name];
                 if (word[i].new && (word[i].square == "DoubleLetter")) letterScore=letterScore*2;
                 if (word[i].new && (word[i].square == "TripleLetter")) letterScore=letterScore*3;
                 if (word[i].new && (word[i].square == "DoubleWord")) doubleWord = true;

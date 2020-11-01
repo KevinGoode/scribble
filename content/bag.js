@@ -16,7 +16,7 @@ function Bag (noInit, letters) {
     this.getInitialBag = function(){
         var unmixedBag = [];
         ALPHABET.forEach(letter => {
-            for (var i=0;i<letter.total;i++){
+            for (var i=0;i<DIST_DICTIONARY[letter.name];i++){
               //Take a copy of letter
               let letterCopy = Object.assign({}, letter);
               unmixedBag.push(letterCopy);
@@ -66,7 +66,7 @@ function Bag (noInit, letters) {
     
        //Now re-arrange array with player with lowest letter first then other players
        //from a clockwise
-       finalTrayStates.sort((a, b) => (a.letters[0].order > b.letters[0].order) ? 1 : -1)
+       finalTrayStates.sort((a, b) => (ORDER_DICTIONARY[a.letters[0].name] > ORDER_DICTIONARY[b.letters[0].name]) ? 1 : -1)
 
        //Finally loop through finalTrays and add another 6 letters to each player in order
        for (var i=0;i<finalTrayStates.length;i++){
