@@ -1,3 +1,3 @@
-#nginx -c /etc/nginx/nginx.conf -g 'daemon off;' 
-#python3 /scribble/server.py &
+#Run
+#python3 /scribble/server.py > server.log &
 nginx -c /etc/nginx/nginx.conf 

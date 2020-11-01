@@ -1,41 +1,44 @@
+from datetime import datetime, timezone
 import os
 import json
 from flask import Flask, render_template, request, abort, jsonify
 from flask_socketio import SocketIO, Namespace, emit
+import time
 import uuid
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, cors_allowed_origins='*')
 SCRIBBLE_FILE_PATH = "/scribble/games"
+FOUR_WEEKS = 4 * 7 *24 * 60 * 60
 
 class GameSpecificSocketHandler(Namespace):
     def set_name(self, name):
         self.name = name
     def on_connect(self):
-        print('Client connected')
+        self.log('Client connected')
         with open(SCRIBBLE_FILE_PATH + "/" + self.name) as gamefile:
             game_data = json.load(gamefile)
         #Send state data to client that connected only
         emit('game message', {'type': 'stateUpdate', 'body': game_data,'sender': self.name})
 
     def on_disconnect(self):
-        print('Client disconnected')
+        self.log('Client disconnected')
 
     def on_game_event(self, data):
-        print('Received message: ' + data['type'])
+        self.log('Received message: ' + data['type'] + " from player: " + data['sender'])
         if data['type'] == 'stateUpdate':
             with open(SCRIBBLE_FILE_PATH + "/" +  self.name, 'w') as game_file:
                 # Save state
                 json.dump(data['body'], game_file)
             # Send state update to all
-            print('Forwarding update state message')
+            self.log('Forwarding update state message')
             emit('game message', data, broadcast=True)
         elif data['type'] == 'playerAdd':
             addPlayer =  False
             with open(SCRIBBLE_FILE_PATH + "/" +  self.name, 'r') as game_file:
                 game_data = json.load(game_file)
                 if data['body']['name'] not in game_data['Players']:
-                    print('Player ' + data['body']['name'] + ' registered')
+                    self.log('Player ' + data['body']['name'] + ' registered')
                     game_data['Players'].append(data['body']['name'])
                     addPlayer = True
             if addPlayer:
@@ -45,6 +48,9 @@ class GameSpecificSocketHandler(Namespace):
         else:
             # Send all other messages to all clients
             emit('game message', data, broadcast=True)
+
+    def log(self, message):
+        logMsg(" Game:" + self.name + " " + message)
 
 @app.errorhandler(400)
 def bad_request(e):
@@ -131,12 +137,34 @@ def delete(game_id):
     abort(404, description="No game called " +  game_id)
 
 def get_games():
+    #Gets list of games but also deletes any old games
     games = []
+    now = time.time()
     for root, dirs, files in os.walk(SCRIBBLE_FILE_PATH):
         for filename in files:
-            games.append(filename)
+            last_modified = os.path.getmtime(SCRIBBLE_FILE_PATH + "/" + filename)
+            if ((now - last_modified ) > FOUR_WEEKS):
+                logMsg("*Removing old game %s *" % filename)
+                os.remove(SCRIBBLE_FILE_PATH + "/" + filename)
+            else:
+                games.append(filename)
+            
     return games
 
+def logMsg(message):
+    now = datetime.now(timezone.utc).strftime("%d/%m/%Y-%H:%M:%S")
+    print(now + message)
+
+def init():
+    #Instantiate sockets for all live games on process start
+    games = get_games()
+    for game in games:
+        with open(SCRIBBLE_FILE_PATH + "/" + game) as gamefile:
+            game_data = json.load(gamefile)
+            game_socket = GameSpecificSocketHandler('/scribble/' + game_data['id'])
+            game_socket.set_name(game)
+            socketio.on_namespace(game_socket)
 
 if __name__ == '__main__':
+    init()
     socketio.run(app)

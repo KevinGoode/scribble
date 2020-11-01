@@ -432,7 +432,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.addPlayer = function(name){
         //When this event is received, the server sends stateUpdated message. Normally it is
         //either game owner (on game start) or current player (on turn end) who sends stateUpdated
-        this.socket.emit('game_event', {type: 'playerAdd', body: {'name': name}});
+        this.socket.emit('game_event', {type: 'playerAdd', body: {'name': name}, sender: name});
         
     }
     this.getStateText =function (){
@@ -549,14 +549,18 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             //Set display last turn number so know next time what to do
             this.turnNumber = lastTurn.TurnNumber
         }else{
-            //No last turn, so show my initial tray if game has started
-            var me = this.GetMyPlayerName();
-            var myTray = this.state.GetMyTrayState(me)
-            if (myTray){
-                console.log("Got state update. Showing initial tray")
-                this.tray.AddLetters(myTray.GetLetters());
+            //No last turn, so show my initial tray if game has started and tray not already populated
+            if(this.tray.GetNumberOfLetters() == 0) {
+                var me = this.GetMyPlayerName();
+                var myTray = this.state.GetMyTrayState(me)
+                if (myTray){
+                    console.log("Got state update. Showing initial tray")
+                    this.tray.AddLetters(myTray.GetLetters());
+                }else{
+                    console.log("Got state update. Game not started. Nothing to display");
+                }
             }else{
-                console.log("Got state update. Game not started. Nothing to display");
+                console.log("Got state update. Already showing initial tray so nothing to do.")
             }
         }
     }
