@@ -64,6 +64,15 @@ function GameBoard(game, name) {
         this.DeleteLiveLetters();
         this.PreviewLetters(letters)
     }
+    this.UpdateToTurnState = function(turnState){
+        //This method resets board display to a given state
+        //Delete all sprites
+        this.deleteLetters(this.letters);
+        this.deleteLetters(this.oldLetters);
+        //Add all letters from last state
+        var allLetters = turnState.GetBoardLetters();
+        this.addLettersToBoard(allLetters, this.oldLetters);
+    }
     this.UpdateFromLastTurn = function(lastTurn){
         if (lastTurn.DidAddWord()){
             this.DeleteLiveLetters();

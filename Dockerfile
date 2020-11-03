@@ -18,6 +18,8 @@ RUN mkdir /scribble/games
 RUN chmod a+rwx /scribble/games
 ADD server /scribble
 RUN chmod a+x /scribble/start.sh
+#Remove next line
+ADD test/fullgame /scribble/games
 #ADD content /etc/nginx/html
 ADD config/nginx.conf /etc/nginx/nginx.conf
 RUN  mkdir -p /etc/nginx/conf.d

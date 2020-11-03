@@ -153,7 +153,7 @@ def get_games():
 
 def logMsg(message):
     now = datetime.now(timezone.utc).strftime("%d/%m/%Y-%H:%M:%S")
-    print(now + message)
+    print(now + message, flush=True)
 
 def init():
     #Instantiate sockets for all live games on process start

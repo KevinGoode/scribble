@@ -13,13 +13,21 @@ function Tray (game, onDragFunc, onDropFunc) {
     this.x = 0;
     this.y = 0;
     this.group = null;
-    this.letters =[];
+    this.letters =[]; //Array of letter sprites
 
     game.load.image("Tray",  "assets/Tray.jpg" );
     //Dynamic state
     this.state = {} //TrayState
     
-
+    this.UpdateToTurnState = function(turnState, playerName){
+        //This method resets tray display to a given state
+        //Delete all letters on tray 
+        this.removeAllSprites();
+        this.removeAllSpriteReferences();
+        //Add all letters from last state
+        var trayState = turnState.GetPlayerTrayState(playerName);
+        this.AddLetters(trayState.GetLetters());
+    }
     this.GetTrayState = function (playerName){
         //Get TrayState from current arrangement of letter sprites on tray sprites.
         //This is called at end of turn
@@ -70,6 +78,17 @@ function Tray (game, onDragFunc, onDropFunc) {
             this.positionNicely(letterSprite);
             this.logCurrentLetters();
             this.logCurrentTray();
+        }
+    }
+    this.removeAllSprites = function(){
+        //Destroy all sprites
+        for (var i=0;i<this.letters.length;i++){
+            this.letters[i].destroy(true);
+        }
+    }
+    this.removeAllSpriteReferences = function(){
+        for (var i=0;i<this.NumberPositions;i++){
+                this.tray[i].letterSprite = null;
         }
     }
     this.removeLetterFromTray = function (letterSprite){

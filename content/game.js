@@ -540,7 +540,9 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             } else if (this.turnNumber < lastTurn.TurnNumber){
                 //Current players has missed more than one state update
                 //Need to reconstruct board with multiple turns and reset current tray
-                alert("TODO - Need to reconstruct board with multiple turns and reset current tray");
+                var turnState = this.state.GetLastTurnState()
+                this.board.UpdateToTurnState(turnState);
+                this.tray.UpdateToTurnState(turnState, this.GetMyPlayerName());
             } else {
                 //Current player is ahead of current state. An Undo must have occurred
                 //Need to reconstruct board and tray to a past state.

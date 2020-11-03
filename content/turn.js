@@ -35,6 +35,9 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
         //Called at end of turn on clone of last turnstate
         return this.Bag.GetLetter();
     }
+    this.GetBoardLetters = function(){
+        return this.BoardState.GetLetters();
+    }
     this.ReturnLetters = function(letters){
         this.Bag.ReturnLetters(letters);
     }
@@ -45,6 +48,16 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
     this.UpdateBoardState = function (letters){
         //Called at end of turn on clone of last turnstate
         this.BoardState.AddLetters(letters);
+    }
+    this.GetPlayerTrayState = function (playerName){
+        var trayState = null;
+        for (var i=0;i<this.TrayStates.length;i++){
+            if (playerName == this.TrayStates[i].GetPlayer()){
+                trayState =  this.TrayStates[i];
+                break;
+            }
+        }
+        return trayState;
     }
     this.SetTrayState = function (trayState){
         //Called at end of turn on clone of last turnstate
