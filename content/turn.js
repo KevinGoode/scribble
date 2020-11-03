@@ -27,7 +27,14 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
     this.TrayStates = trayStates; //Array of TrayStates
     this.MessageBuffer = messageBuffer ; //String
     this.Turn = turn ; //Turn
-
+    
+    this.GetPlayer = function(){
+        var player = "";
+        if(this.Turn){
+            player= this.Turn.Player
+        }
+        return player;
+    }
     this.Clone = function(){
         return new TurnState(this.Bag.Clone(), this.BoardState.Clone(), this.cloneTrayStates(), null)
     }

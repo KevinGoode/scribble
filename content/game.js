@@ -181,10 +181,6 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             var msg = "Cannot undo. There is nothing to undo. Nobody has had a turn yet."
             return new QuestionResponse(false, msg);
         }
-        else if (!this.state.History[state.History.length-1].DidAddWord()) {
-            var msg = "Cannot undo. Last turn did not not involve adding a word"
-            return new QuestionResponse(false, msg);
-        }
         return OK_RESPONSE
     }
     this.SendMessage = function (text){
@@ -254,7 +250,8 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.Undo = function() {
         var response = this.CanIUndo();
         if (response.Yes){
-            alert("Undo - todo");
+            this.state.RemoveLastState();
+            this.sendUpdateGameMessage();
         }
     }
     this.JoinGame = function(gameName, playerName) {
@@ -501,6 +498,12 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         if (this.state) {
             text += "State:" + this.getStateText() + "\n";
             text += "Letters Left: " + this.state.GetBagSize().toString() + "\n";
+            text += "Turn Number: "
+            var lastTurn = this.state.GetLastTurn()
+            if (lastTurn){
+                text += lastTurn.TurnNumber.toString();
+            }
+            text += "\n"
             text += "Players:\n";
             for (var i=0;i<this.state.Players.length;i++){
                 var score = 0;
@@ -512,8 +515,12 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
                 if (this.state.GetGameOwner() == this.state.Players[i]){
                     extra +="(Manager)"
                 }
+                if (i == this.state.CurrentPlayer && this.state.Started){
+                    extra +="*"
+                }
                 text += score.toString() + " " + this.state.Players[i] + extra + "\n";
             }
+
             if (this.CanIGo()){
                 //It is my turn so set my active state
                 this.activePlayerState = new ActivePlayerState(this.state.GetNumberOfPlayers());
@@ -546,24 +553,30 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             } else {
                 //Current player is ahead of current state. An Undo must have occurred
                 //Need to reconstruct board and tray to a past state.
-                alert("TODO - Need to reconstruct board and tray to a past state");
+
+                //Actually code is same as previous case
+                var turnState = this.state.GetLastTurnState()
+                this.board.UpdateToTurnState(turnState);
+                this.tray.UpdateToTurnState(turnState, this.GetMyPlayerName());
             }
             //Set display last turn number so know next time what to do
             this.turnNumber = lastTurn.TurnNumber
         }else{
-            //No last turn, so show my initial tray if game has started and tray not already populated
-            if(this.tray.GetNumberOfLetters() == 0) {
-                var me = this.GetMyPlayerName();
-                var myTray = this.state.GetMyTrayState(me)
-                if (myTray){
-                    console.log("Got state update. Showing initial tray")
-                    this.tray.AddLetters(myTray.GetLetters());
-                }else{
-                    console.log("Got state update. Game not started. Nothing to display");
-                }
+            
+            //Could have got here at start of game, or through undo
+            /// Hence delete board and tray and populate tray anew
+            this.board.DeleteAll();
+            this.tray.DeleteAll();
+
+            var me = this.GetMyPlayerName();
+            var myTray = this.state.GetMyTrayState(me)
+            if (myTray){
+                console.log("Got state update. Showing initial tray")
+                this.tray.AddLetters(myTray.GetLetters());
             }else{
-                console.log("Got state update. Already showing initial tray so nothing to do.")
+                console.log("Got state update. Game not started. Nothing to display");
             }
+            
         }
     }
     this.sendUpdateGameMessage = function(){
@@ -723,6 +736,16 @@ function GameState (state) {
     }
     this.GetGameOwner = function(){
         return this.Players[ this.GameOwner];
+    }
+    this.RemoveLastState = function(){
+        var lastTurnState = this.History.pop();
+        var newLastTurn = this.GetLastTurn();
+        if (newLastTurn){
+            this.CurrentPlayer = newLastTurn.NextPlayer;
+        }else{
+            //This is same code at start game first player is first tray state
+            this.SetCurrentPlayerByName(lastTurnState.GetTrayState(0).GetPlayer());
+        }
     }
     this.SetCurrentPlayerByName = function(playerName){
         this.CurrentPlayer = 0

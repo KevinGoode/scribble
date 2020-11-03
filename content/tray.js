@@ -19,11 +19,14 @@ function Tray (game, onDragFunc, onDropFunc) {
     //Dynamic state
     this.state = {} //TrayState
     
-    this.UpdateToTurnState = function(turnState, playerName){
-        //This method resets tray display to a given state
+    this.DeleteAll = function (){
         //Delete all letters on tray 
         this.removeAllSprites();
         this.removeAllSpriteReferences();
+    }
+    this.UpdateToTurnState = function(turnState, playerName){
+        //This method resets tray display to a given state
+        this.DeleteAll();
         //Add all letters from last state
         var trayState = turnState.GetPlayerTrayState(playerName);
         this.AddLetters(trayState.GetLetters());
@@ -85,6 +88,7 @@ function Tray (game, onDragFunc, onDropFunc) {
         for (var i=0;i<this.letters.length;i++){
             this.letters[i].destroy(true);
         }
+        this.letters = [];
     }
     this.removeAllSpriteReferences = function(){
         for (var i=0;i<this.NumberPositions;i++){
