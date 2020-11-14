@@ -131,6 +131,11 @@ function WordChecker (letters, oldLetters) {
                 score +=scores[i].score;
                 text += scores[i].name + ":" + scores[i].score.toString() +"\n"
             }
+            if (letters.length == 7){
+                //Bonus 50
+                score +=50;
+                text += "Bonus:50";
+            }
             return {score: score, text: text};
         }
         this.isIntArrayContinuous = function(array){
@@ -217,7 +222,7 @@ function WordChecker (letters, oldLetters) {
                 var letterScore = POINTS_DICTIONARY[word[i].name];
                 if (word[i].new && (word[i].square == "DoubleLetter")) letterScore=letterScore*2;
                 if (word[i].new && (word[i].square == "TripleLetter")) letterScore=letterScore*3;
-                if (word[i].new && (word[i].square == "DoubleWord")) doubleWord = true;
+                if (word[i].new && (word[i].square == "DoubleWord" || word[i].square == "Centre")) doubleWord = true;
                 if (word[i].new && (word[i].square == "TripleWord")) tripleWord = true;
                 wordScore+=letterScore;
             }
