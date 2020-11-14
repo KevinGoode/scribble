@@ -54,11 +54,11 @@ function WordChecker (letters, oldLetters) {
                 if (this.letters.length > 0){
                     //All x's the same so just get first
                     var x = this.letters[0].x;
-                    var sorted = yPositions.sort();
-                    for (var i=1;i< sorted.length;i++){
-                        if (sorted[i] != (sorted[i-1] + 1)){
+                    this.intArraySort(yPositions);
+                    for (var i=1;i< yPositions.length;i++){
+                        if (yPositions[i] != (yPositions[i-1] + 1)){
                             //Found gap in new letters
-                            for (var j=sorted[i-1]+1;j<sorted[i]; j++) {
+                            for (var j=yPositions[i-1]+1;j<yPositions[i]; j++) {
                                 if (!this.IsOldLetterHere(x, j)) return true
                             }
                         }
@@ -73,11 +73,11 @@ function WordChecker (letters, oldLetters) {
                 if (this.letters.length > 0){
                     //All y's the same so just get first
                     var y = this.letters[0].y;
-                    var sorted = xPositions.sort();
-                    for (var i=1;i< sorted.length;i++){
-                        if (sorted[i] != (sorted[i-1] + 1)){
+                    this.intArraySort(xPositions);
+                    for (var i=1;i< xPositions.length;i++){
+                        if (xPositions[i] != (xPositions[i-1] + 1)){
                             //Found gap in new letters
-                            for (var j=sorted[i-1]+1;j<sorted[i]; j++) {
+                            for (var j=xPositions[i-1]+1;j<xPositions[i]; j++) {
                                 if (!this.IsOldLetterHere(j, y)) return true
                             }
                         }
@@ -131,11 +131,15 @@ function WordChecker (letters, oldLetters) {
             return score;
         }
         this.isIntArrayContinuous = function(array){
-            var sorted = array.sort();
-            for (var i=1;i< sorted.length;i++){
-                if (sorted[i] != (sorted[i-1] + 1)) return false;
+            this.intArraySort(array);
+            for (var i=1;i< array.length;i++){
+                if (array[i] != (array[i-1] + 1)) return false;
             }
             return true;
+        }
+        this.intArraySort= function(array) {
+            //https://www.w3schools.com/js/js_array_sort.asp
+            array.sort(function(a, b){return a - b});
         }
         this.getScoreOfMainWord = function(){
             var isVertical = true;

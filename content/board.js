@@ -83,7 +83,7 @@ function GameBoard(game, name) {
         }
     }
     this.PreviewLetters = function(letters) {
-        this.addLettersToBoard(letters, this.letters);
+        this.addLettersToBoard(letters, this.letters, true);
      }
     this.LayLetters = function(letters) {
         this.addLettersToBoard(letters, this.oldLetters);
@@ -107,13 +107,14 @@ function GameBoard(game, name) {
             sprites[i].destroy(true);
         }
     }
-    this.addLettersToBoard = function(letters, letterList){
+    this.addLettersToBoard = function(letters, letterList, tentative){
         //Letters is array of letters. Need to create sprites, place them on board and add to letterList.
         //letterList is either this.letters or this.oldLetters
        for (var i=0;i<letters.length;i++){
         var boardPos = {x: letters[i].x, y:letters[i].y}
         var pos = this.getLetterPosFromTileSquarePos(LETTER_SIZE, this. boardPosToScreenPos(boardPos));
         var letterSprite = this.game.add.sprite(pos.x, pos.y, letters[i].name);
+        if (tentative) letterSprite.alpha=0.7;
         letterSprite.name = letters[i].name;
         letterList.push(letterSprite);
        }

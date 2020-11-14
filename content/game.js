@@ -540,6 +540,8 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
                 if (lastTurn.DidAddWord()){
                     console.log("Got state update. Adding new letters to board");
                     this.board.UpdateFromLastTurn(lastTurn);
+                    var turnState = this.state.GetLastTurnState()
+                    this.tray.UpdateToTurnState(turnState, this.GetMyPlayerName());
                 }else{
                     console.log("Got state update. Last go was either letter change or skip. Nothing to do");
                 }
