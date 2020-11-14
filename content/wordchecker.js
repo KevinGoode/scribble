@@ -122,13 +122,16 @@ function WordChecker (letters, oldLetters) {
             return false;
         }
         this.GetScore = function() {
+            var text = ""
             var mainWord = this.getScoreOfMainWord();
+            text += mainWord.name + ":" + mainWord.score.toString() +"\n"
             var score =mainWord.score;
             var scores = this.getScoresOfOtherWords(mainWord);
             for (var i=0;i<scores.length;i++){
                 score +=scores[i].score;
+                text += scores[i].name + ":" + scores[i].score.toString() +"\n"
             }
-            return score;
+            return {score: score, text: text};
         }
         this.isIntArrayContinuous = function(array){
             this.intArraySort(array);
@@ -210,7 +213,7 @@ function WordChecker (letters, oldLetters) {
             var name = "";
             //word is an ordered array of old and new letters
             for (var i=0;i<word.length;i++){
-                name += word[i].name;
+                name += word[i].name.replace("BLANKLETTER","_")
                 var letterScore = POINTS_DICTIONARY[word[i].name];
                 if (word[i].new && (word[i].square == "DoubleLetter")) letterScore=letterScore*2;
                 if (word[i].new && (word[i].square == "TripleLetter")) letterScore=letterScore*3;

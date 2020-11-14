@@ -281,18 +281,22 @@ function onDragStop(sprite, pointer) {
         //Letter could have come from following sources so delete from here:
         Tray.RemoveLetter(sprite);
         dropPanel.RemoveLetter(sprite);
+        Board.FadeSprite(sprite)
+       
     }else if (Tray.CanIDropLetter(pointer, sprite)){
         if (myGo) GameEngine.PlayerIsActive();
         //NOTE CAN MOVE TILES AROUND ON TRAY EVEN IF IT IS NOT MYGO
         Tray.DropLetter(pointer, sprite);
         //Letter could have come from following sources so delete from here:
         Board.RemoveLetter(sprite);
+        Board.UnFadeSprite(sprite)
         dropPanel.RemoveLetter(sprite);
     }else if (myGo &&  dropPanel.CanIDropLetter(pointer, sprite)){
         GameEngine.PlayerIsActive();
         dropPanel.DropLetter(pointer, sprite);
         //Letter could have come from following sources so delete from here:
         Board.RemoveLetter(sprite);
+        Board.UnFadeSprite(sprite)
         Tray.RemoveLetter(sprite);
     }else{
         //Failed to find a drop zone so move back to last position

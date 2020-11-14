@@ -376,7 +376,9 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        if (lettersOut.length > 0) {
             var oldLetters = this.board.GetOldLetters();
             var checker = new WordChecker(lettersOut, oldLetters);
-            newPoints = checker.GetScore();
+            var score = checker.GetScore();
+            newPoints = score.score
+            this.sendSystemMessage(this.playerName + " laid:\n" + score.text);
        }else{
            type = "skip"
            console.log("Skipping go")
@@ -387,6 +389,9 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
        this.state.AddTurnState(newTurnState);
        //Update everybody's state
        this.sendUpdateGameMessage();
+    }
+    this.sendSystemMessage = function(text){
+        this.socket.emit('game_event', {type: 'system', body: text, sender: this.playerName});
     }
     this.getNewTurnState = function(newPoints, type, lettersOut){
        var me = this.GetMyPlayerName();
@@ -465,12 +470,18 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             case "preview":
                 this.receivePreviewMessage(message);
                 return;
+            case "system":
+                this.receiveSystemMessage(message);
+                return;
             case "like":
                 this.receiveLikeMessage(message);
                 return;
             default:
                 this.errorPanel.SetText("Received message with unsupported type: " + message.type)
         };
+    }
+    this.receiveSystemMessage = function(message){
+        this.errorPanel.SetText(message.body);
     }
     this.receiveLikeMessage = function(message){
         if (this.CanIGo()){

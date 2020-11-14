@@ -60,6 +60,12 @@ function GameBoard(game, name) {
         this.DeleteLiveLetters();
         this.LayLetters(letters)
     }
+    this.FadeSprite = function(sprite){
+        sprite.alpha=0.7;
+    }
+    this.UnFadeSprite = function(sprite){
+        sprite.alpha=1.0;
+    }
     this.ShowPreview = function(letters){
         this.DeleteLiveLetters();
         this.PreviewLetters(letters)
@@ -114,7 +120,7 @@ function GameBoard(game, name) {
         var boardPos = {x: letters[i].x, y:letters[i].y}
         var pos = this.getLetterPosFromTileSquarePos(LETTER_SIZE, this. boardPosToScreenPos(boardPos));
         var letterSprite = this.game.add.sprite(pos.x, pos.y, letters[i].name);
-        if (tentative) letterSprite.alpha=0.7;
+        if (tentative) this.FadeSprite(letterSprite);
         letterSprite.name = letters[i].name;
         letterList.push(letterSprite);
        }
