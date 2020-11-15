@@ -220,6 +220,9 @@ function TrayState(player, letters, score) {
         trayState.score = this.score
         return trayState;
     }
+    this.GetNumberOfLetters = function(){
+       return this.letters.length;
+    }
     this.GetLetters = function(){
         return this.letters;
     }
@@ -244,6 +247,14 @@ function TrayState(player, letters, score) {
     }   
     this.SetPlayer = function(name){
         this.player=name;
+    }
+    this.GetScoreOfTray = function(name){
+        //Called atend of game to determine final score
+        var score = 0;
+        for (var i=0;i<this.letters.length;i++){
+            score += POINTS_DICTIONARY[this.letters[i].name];
+        }
+        return score;
     }
     this.GetScore = function(){
         return this.score;

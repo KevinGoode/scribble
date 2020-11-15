@@ -122,14 +122,19 @@ function WordChecker (letters, oldLetters) {
             return false;
         }
         this.GetScore = function() {
-            var text = ""
+            var text = "";
+            var score = 0;
             var mainWord = this.getScoreOfMainWord();
-            text += mainWord.name + ":" + mainWord.score.toString() +"\n"
-            var score =mainWord.score;
+            if (mainWord.score > 0){
+                text += mainWord.name + ":" + mainWord.score.toString() +"\n"
+                score += mainWord.score;
+            }
             var scores = this.getScoresOfOtherWords(mainWord);
             for (var i=0;i<scores.length;i++){
-                score +=scores[i].score;
-                text += scores[i].name + ":" + scores[i].score.toString() +"\n"
+                if (scores[i].score > 0) {
+                    score +=scores[i].score;
+                    text += scores[i].name + ":" + scores[i].score.toString() +"\n"
+                }
             }
             if (letters.length == 7){
                 //Bonus 50
@@ -228,6 +233,9 @@ function WordChecker (letters, oldLetters) {
             }
             if (doubleWord) wordScore = wordScore*2;
             if (tripleWord) wordScore = wordScore*3;
+            if (word.length <= 1){
+                 wordScore = 0; //No such thing as a one letter word in scribble
+            }
             console.log("Word "+ name + " has score " + wordScore.toString());
             return {score: wordScore, name: name, isVertical:isVertical, letters: word}
         }

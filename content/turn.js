@@ -4,7 +4,7 @@
 //If 'word' then lettersIn are those from bag and lettersOut are those placed on board
 function Turn (type, lettersIn, lettersOut, turnNumber, player, nextPlayer) {
     // Storage class for a turn. Used by game 
-    this.Type = type; //  'skip', 'change', 'word'
+    this.Type = type; //  'skip', 'change', 'word', 'end'
     this.LettersIn = lettersIn; //array of tiles
     this.LettersOut = lettersOut; //array of tiles
     this.TurnNumber = turnNumber; //number
@@ -18,14 +18,12 @@ function Turn (type, lettersIn, lettersOut, turnNumber, player, nextPlayer) {
 }
 //A TurnState copy of game state at end of a turn
 //Note the first turn is a null turn whereby the turn and board objects are empty
-//and the messageBuffer is blank since it just records state of bag and 
-//initial state of each player's tray
-function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
+function TurnState (bag, boardState, trayStates, lastTurn,turn) {
     // Storage class for a turnState. Instantiated by game at end of each turn
     this.Bag = bag; 
     this.BoardState = boardState; //BoardState
     this.TrayStates = trayStates; //Array of TrayStates
-    this.MessageBuffer = messageBuffer ; //String
+    this.End = lastTurn ;
     this.Turn = turn ; //Turn
     
     this.GetPlayer = function(){
@@ -36,7 +34,7 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
         return player;
     }
     this.Clone = function(){
-        return new TurnState(this.Bag.Clone(), this.BoardState.Clone(), this.cloneTrayStates(), null)
+        return new TurnState(this.Bag.Clone(), this.BoardState.Clone(), this.cloneTrayStates(), this.End, null)
     }
     this.GetLetter = function(){
         //Called at end of turn on clone of last turnstate
@@ -52,6 +50,9 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
         //Called at end of turn on clone of last turnstate
         this.Turn = turn;
     }
+    this.SetTurnType = function (type){
+        this.Turn.Type = type;
+    }
     this.UpdateBoardState = function (letters){
         //Called at end of turn on clone of last turnstate
         this.BoardState.AddLetters(letters);
@@ -65,6 +66,18 @@ function TurnState (bag, boardState, trayStates, messageBuffer,turn) {
             }
         }
         return trayState;
+    }
+    this.GetWinner = function() {
+        var highestScore = 0;
+        var winner =""
+        for (var i=0;i<this.TrayStates.length;i++){
+             var score = this.TrayStates[i].GetScore()
+             if (score > highestScore){
+                winner = this.TrayStates[i].GetPlayer()
+                highestScore = score
+             }
+        }
+        return winner;
     }
     this.SetTrayState = function (trayState){
         //Called at end of turn on clone of last turnstate

@@ -83,6 +83,15 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         } else if (! this.amIGameOwner()){
             var msg = "Only the player who created the game can end it."
             return new QuestionResponse(false, msg)
+        }else if (!this.CanIGo()){
+            var msg = "Player manager can only end game when it is his turn. \nAsk other players to skip turns"
+            return new QuestionResponse(false, msg)
+        }else if(this.dropBox.GetLiveLetters().length > 0){
+            var msg = "Cannot end game if there are letters in letter drop";
+            return new QuestionResponse(false, msg);
+        }else if(this.board.GetLiveLetters().length > 0){
+            var msg = "Cannot end game if there are letters just dropped on the board";
+            return new QuestionResponse(false, msg);
         }
         return OK_RESPONSE
     }
@@ -211,20 +220,14 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
     this.EndTurn = function (){
         var response = this.CanIEndTurn();
         if (response.Yes){
-             this.endTurn();
+             this.end(false);
         }
         return response;
     }
     this.EndGame = function (){
         var response = this.CanIEndGame();
         if (response.Yes){
-            //TODO update state , send message to server to reinit all  players to reset
-            alert("EndGame - todo");
-
-            this.gameName = "";
-            this.playerName = "";
-            this.state =null;
-            this.sendUpdateGameMessage();
+            this.end(true);
         }
     }
     this.CreateGame = function(gameName, playerName){
@@ -369,7 +372,12 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         //Update everybody's state
         this.sendUpdateGameMessage();
     }
-    this.endTurn = function(){
+    this.end = function(endingGame){
+       //Called from either EndGame or EndTurn
+       //EndGame is a specialised case of EndTurn ie It is the 'skip' turn of the game manager
+       //NOTE EndTurn can also 'result' in an endgame if a player lays his last piece and there
+       //are no pieces left
+       var message = this.playerName;
        var newPoints = 0;
        var type = "word";
        var lettersOut = this.board.GetLiveLetters();
@@ -377,18 +385,70 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
             var oldLetters = this.board.GetOldLetters();
             var checker = new WordChecker(lettersOut, oldLetters);
             var score = checker.GetScore();
-            newPoints = score.score
-            this.sendSystemMessage(this.playerName + " laid:\n" + score.text);
+            newPoints = score.score;
+            message += " laid:\n" + score.text
+            
        }else{
            type = "skip"
            console.log("Skipping go")
+           message += " skipped a turn"
        }
-       newTurnState = this.getNewTurnState(newPoints, type, lettersOut);
+       var newTurnState = this.getNewTurnState(newPoints, type, lettersOut);
        newTurnState.UpdateBoardState(lettersOut);
        this.board.EndTurn(); //This deletes live letters and moves then to old
        this.state.AddTurnState(newTurnState);
+       
+       var trayState = newTurnState.GetPlayerTrayState(this.playerName);
+       var count = trayState.GetNumberOfLetters();
+       if (count == 0) {
+            message += this.updateScoreLaidLastTile(newTurnState)
+       }else if (endingGame){
+            message +=this.updateScoreEndingGame(newTurnState)
+       }
+       
+       this.sendSystemMessage(message);
+
        //Update everybody's state
        this.sendUpdateGameMessage();
+    }
+    this.updateScoreLaidLastTile = function(newTurnState){
+         //Game is ended
+         newTurnState.End = true;
+         var message = "Last tile laid\n"
+         var result = this.takeTrayScoreFromEachPlayer(newTurnState)
+         message += result.message;
+         //When a player lays the last tile he also gets toatl tray scores taken from his score
+         var currentScore =newTurnState.GetPlayerScore(this.playerName);
+         var trayState = newTurnState.GetPlayerTrayState(this.playerName);
+         message += "Adding " + result.totalTrayScores.toString() + " to " + this.playerName + "\n";
+         trayState.SetScore( currentScore + result.totalTrayScores);
+         message += "Winner is " + newTurnState.GetWinner(newTurnState);
+         return message;
+    }
+    this.updateScoreEndingGame= function( newTurnState){
+        //Game has been ended
+        newTurnState.End = true;
+        var message = "Game has been ended\n"
+        var result = this.takeTrayScoreFromEachPlayer(newTurnState)
+        message += result.message;
+        message += "Winner is " + newTurnState.GetWinner(newTurnState);
+        return message;
+    }
+    this.takeTrayScoreFromEachPlayer = function(newTurnState){
+        var totalTrayScores = 0
+        var message = "";
+        for (var i=0; i<this.state.Players.length; i++){
+            var name = this.state.Players[i]
+            var currentScore =newTurnState.GetPlayerScore(name);
+            var trayState = newTurnState.GetPlayerTrayState(name)
+            var score = trayState.GetScoreOfTray()
+            if (score > 0 ){
+                message += "Taking " + score.toString() + " from " + name + "\n"
+                trayState.SetScore( currentScore - score);
+                totalTrayScores += score
+            }
+         }
+         return {totalTrayScores: totalTrayScores, message: message}
     }
     this.sendSystemMessage = function(text){
         this.socket.emit('game_event', {type: 'system', body: text, sender: this.playerName});
@@ -446,7 +506,7 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
         var boardState = new BoardState();
         var trays = bag.GetInitialTrays(this.state.Players);
         this.logTrayStates(trays);
-        var turnState = new TurnState(bag, boardState, trays, "", null);
+        var turnState = new TurnState(bag, boardState, trays, false, null);
         return turnState;
     }
     this.receiveMessage = function(message) {
@@ -537,8 +597,18 @@ function Game(updateGameStateHandler, board, dropBox, tray, errorPanel, messageP
                 this.activePlayerState = new ActivePlayerState(this.state.GetNumberOfPlayers());
             }
              this.updateBoardAndTray();
+             if (state.HasGameEnded()){
+                this.reinit()
+             }
         }
         this.updateGameStateHandler(text, this.state);
+    }
+    this.reinit = function (){
+        this.gameName = "";
+        this.playerName = "";
+        this.state =null;
+        this.turnNumber = 0;
+        this.socket = null;
     }
     this.updateBoardAndTray = function(){
         var lastTurn = this.state.GetLastTurn()
@@ -660,7 +730,7 @@ function GameState (state) {
                 for(var j=0;j<state.History[i].TrayStates.length;j++){ 
                     trayStates.push( new TrayState(state.History[i].TrayStates[j].player, state.History[i].TrayStates[j].letters, state.History[i].TrayStates[j].score));
                 }
-                history.push( new TurnState(bag, boardState, trayStates, "", turn))
+                history.push( new TurnState(bag, boardState, trayStates, state.History[i].End, turn))
             }
             this.History = history ;
         }
@@ -706,6 +776,15 @@ function GameState (state) {
         }
         return lastTurnState;
     }
+    this.HasGameEnded = function(){
+        var ended = false;
+        var lastTurnState = this.GetLastTurnState();
+        if (lastTurnState){
+            ended = lastTurnState.End;
+        }
+        return ended;
+    }
+    
     this.GetLastTurn = function(){
         //Actually only gets last proper turn because there is no turn object in first turnState
         var lastTurn = null;

@@ -185,6 +185,7 @@ function onNewGame(button){
         gameBox.inputEnabled=false;
         nameBox.inputEnabled=false;
         messageBox.inputEnabled=true;
+        errorPanel.SetText("*Success*\nCreate new game");
     }else{
         errorPanel.SetText(response.Message);
     }
@@ -196,6 +197,7 @@ function onJoinGame(button){
         gameBox.inputEnabled=false;
         nameBox.inputEnabled=false;
         messageBox.inputEnabled=true;
+        errorPanel.SetText("*Success*\nJoined game");
     }else{
         errorPanel.SetText(response.Message);
     }
@@ -204,6 +206,7 @@ function onStartGame(button){
     var response = GameEngine.CanIStartGame();
     if (response.Yes) {
         GameEngine.StartGame();
+        errorPanel.SetText("*Success*\nGame started.");
     }else{
         errorPanel.SetText(response.Message);
     }
@@ -229,6 +232,7 @@ function onEndTurn(button){
     var response = GameEngine.CanIEndTurn();
     if (response.Yes) {
         GameEngine.EndTurn();
+        errorPanel.SetText("*Success*\nEnded turn. Wait for others to finish their turns");
     }else{
         errorPanel.SetText(response.Message);
     }
@@ -237,6 +241,7 @@ function onSubmit(button){
     var response = GameEngine.CanISubmit();
     if (response.Yes) {
         GameEngine.Submit();
+        errorPanel.SetText("*Success*\nSubmitted. Wait for others to 'like'");
     }else{
         errorPanel.SetText(response.Message);
     }
@@ -253,6 +258,7 @@ function onChangeLetters(button){
     var response = GameEngine.CanIChangeLetters();
     if (response.Yes) {
         GameEngine.ChangeLetters();
+        errorPanel.SetText("*Success*\nChanged letters");
     }else{
         errorPanel.SetText(response.Message);
     }
@@ -261,6 +267,7 @@ function onLike(button){
     var response = GameEngine.CanILike();
     if (response.Yes) {
         GameEngine.Like();
+        errorPanel.SetText("*Success*\nSent 'like'");
     }else{
         errorPanel.SetText(response.Message);
     }
@@ -269,6 +276,7 @@ function onDontLike(button){
     var response = GameEngine.CanIDontLike();
     if (response.Yes) {
         GameEngine.DontLike();
+        errorPanel.SetText("*Success*\nSent 'don't like'");
     }else{
         errorPanel.SetText(response.Message);
     }
