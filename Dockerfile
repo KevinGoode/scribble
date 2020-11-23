@@ -20,7 +20,8 @@ ADD server /scribble
 RUN chmod a+x /scribble/start.sh
 #Remove next line
 ADD test/fullgame /scribble/games
-#ADD content /etc/nginx/html
+# Comment out following line if runing in dev mode with shared volume
+ADD content /etc/nginx/html
 ADD config/nginx.conf /etc/nginx/nginx.conf
 RUN  mkdir -p /etc/nginx/conf.d
 RUN chmod a+r  /etc/nginx/conf.d
