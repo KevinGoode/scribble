@@ -4,8 +4,8 @@
 //https://www.joshmorony.com/how-to-scale-a-game-for-all-device-sizes-in-phaser/
 var SCREEN_WIDTH = window.innerWidth * window.devicePixelRatio;
 var SCREEN_HEIGHT = window.innerHeight * window.devicePixelRatio;
-var game = new Phaser.Game(SCREEN_WIDTH, SCREEN_HEIGHT, Phaser.CANVAS,  'phaser-example', { preload: preload, create: create, render: render });
-
+var game = new Phaser.Game(1000* window.devicePixelRatio, 800* window.devicePixelRatio, Phaser.AUTO,  'phaser-example', { preload: preload, create: create, render: render });
+//var game = new Phaser.Game(SCREEN_WIDTH* window.devicePixelRatio, SCREEN_HEIGHT* window.devicePixelRatio, Phaser.AUTO,  'phaser-example', { preload: preload, create: create, render: render });
 
 var NewGameButton;
 var JoinGameButton;
@@ -34,23 +34,8 @@ function preload() {
     //Load input plugin https://github.com/azerion/phaser-input
     game.add.plugin(PhaserInput.Plugin);
     loadImages();
-
-    //var socket = io.connect('http://' + document.domain + ':' + location.port>
-    /*
-    var socket = io();
-    socket.on('my response', function(msg) {
-        console.log('Received: ' + msg.data);
-    });
-    socket.on('connect', function(msg) {
-        console.log("CONNECTED");
-        socket.emit('my event', {data: "hello"});
-    });
-    socket.on('disconnect', function(msg) {
-        console.log("DISCONNECTED");
-    });
-    */
     
-    
+    window.addEventListener("resize", resize, false);
 }
 function loadImages(){
     
@@ -82,8 +67,8 @@ function loadImages(){
 function positionStaticImages(){
     
     var buttonHeight=67;
-    var boardWidth =660; //640
-    var boardHeight =660; //640
+    var boardWidth =660; 
+    var boardHeight =660; 
     var buttonWidth =154;
     var buttonRightAlign = boardWidth + buttonWidth + 10;
     var feedbackLeftAlign = boardWidth + 10;
@@ -167,16 +152,31 @@ function create() {
 
 function initGameArea(){
     //Set bounds same size as game canvas
-    game.world.setBounds(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    //game.world.setBounds(0, 0, SCREEN_WIDTH*XSCALE, SCREEN_HEIGHT*YSCALE);
     //Need following lines to rescale depending on screen size
     //https://www.jamesbaum.co.uk/blether/scale-phaser-games-to-fill-screen/
     //NB GAME STILL WILL NOT DISPLAY ON PHONE VERY WELL
-    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
-    game.scale.pageAlignHorizontally = true;
-    game.scale.pageAlignVertically = true; 
+    //game.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT ;
+    //game.scale.pageAlignHorizontally = true;
+    //game.scale.pageAlignVertically = true; 
+
+    resize();
+    //game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;              
+	//game.scale.pageAlignHorizontally = true;                   
+	//game.scale.pageAlignVertically = true;
+	//game.scale.forceOrientation(true, false);
+	//game.scale.setMaximum();
+	//game.scale.refresh();
 }
 
-
+function resize() {
+	game.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT;
+	game.scale.pageAlignHorizontally = true;
+	game.scale.pageAlignVertically = true;
+	game.scale.forceOrientation(true, true);
+	game.scale.setShowAll();
+	game.scale.refresh();
+}
 
 function render() {
 
