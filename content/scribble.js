@@ -168,7 +168,12 @@ function create() {
 function initGameArea(){
     //Set bounds same size as game canvas
     game.world.setBounds(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
- 
+    //Need following lines to rescale depending on screen size
+    //https://www.jamesbaum.co.uk/blether/scale-phaser-games-to-fill-screen/
+    //NB GAME STILL WILL NOT DISPLAY ON PHONE VERY WELL
+    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+    game.scale.pageAlignHorizontally = true;
+    game.scale.pageAlignVertically = true; 
 }
 
 
